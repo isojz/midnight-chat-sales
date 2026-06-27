@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-180.png">
-<title>MIDNIGHT CHAT PARTY ステッカー販売</title>
+<title>MIDNIGHT CHAT PARTY 物販管理</title>
 <style>
   :root{
     --bg:#0d0f12; --panel:#161a20; --panel2:#1d222a; --line:#2a313c;
@@ -52,34 +52,27 @@
   .livebar .info .none{color:var(--amber);font-weight:700}
   .livebar .chev{color:var(--muted);font-size:12px}
 
-  /* ---- 会計 ---- */
-  .stockbar{display:flex;gap:10px;margin-bottom:12px}
-  .stockchip{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center}
-  .stockchip .d{font-size:11px;color:var(--muted)}
-  .stockchip .n{font-size:22px;font-weight:700}
-  .stockchip .u{font-size:11px;color:var(--muted)}
-  .stockchip.low .n{color:var(--amber)}
-  .stockchip.out .n{color:var(--red)}
+  /* ---- 会計（商品リスト） ---- */
+  .prod{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+  .prod.disabled{opacity:.45;pointer-events:none}
+  .phead{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+  .phead .pname{font-size:16px;font-weight:700}
+  .phead .pstock{margin-left:auto;font-size:12px;color:var(--muted)}
+  .phead .pstock.low{color:var(--amber)}
+  .phead .pstock.out{color:var(--red)}
+  .pbtns{display:flex;gap:9px}
+  .pbuy{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:14px 8px;cursor:pointer;text-align:center;color:var(--text);font-weight:700;transition:transform .05s,background .12s}
+  .pbuy:active{transform:scale(.96);background:#252c36}
+  .pbuy .k{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px}
+  .pbuy.disc{border-color:var(--cyan-d)}
+  .pbuy.disc .k{color:var(--cyan)}
+  .pbuy .pr{font-size:16px}
 
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-  .pbtn{
-    background:var(--panel2);border:1px solid var(--line);border-radius:14px;
-    padding:16px 10px;text-align:center;cursor:pointer;transition:transform .05s, background .12s;
-  }
-  .pbtn:active{transform:scale(.96);background:#252c36}
-  .pbtn.disabled{opacity:.4;pointer-events:none}
-  .pbtn .des{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:20px;font-weight:700}
-  .pbtn .des.b{color:var(--cyan)}
-  .pbtn .typ{font-size:12px;color:var(--muted);margin-top:2px}
-  .pbtn .pr{font-size:16px;font-weight:700;margin-top:4px}
-  .pbtn.discount{border-color:var(--cyan-d)}
-  .pbtn.discount .typ{color:var(--cyan)}
-
-  .cart{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;min-height:54px}
+  .cart{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin:4px 0 12px;min-height:54px}
   .cart .empty{color:var(--muted);font-size:13px;text-align:center;padding:8px 0}
   .citem{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line)}
   .citem:last-child{border-bottom:none}
-  .citem .lbl{flex:1;font-size:14px}
+  .citem .lbl{flex:1;font-size:14px;min-width:0}
   .citem .lbl small{color:var(--muted)}
   .citem .qty{font-weight:700;font-size:15px;min-width:34px;text-align:right}
   .citem .sub{font-weight:700;min-width:64px;text-align:right}
@@ -115,6 +108,8 @@
   .rowstat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
   .rowstat:last-child{border-bottom:none}
   .rowstat b{font-weight:700}
+  .rowstat .mut{color:var(--muted);font-size:12px;font-weight:400;margin-left:6px}
+  .subhead{font-size:12px;color:var(--muted);margin:16px 0 8px}
   .livesum{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;display:flex;align-items:center;gap:10px}
   .livesum .nm{font-size:14px;font-weight:700}
   .livesum .dt{font-size:11px;color:var(--cyan)}
@@ -130,7 +125,7 @@
   .hitem .del{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#222934;color:var(--red);font-size:14px;cursor:pointer}
   .emptybox{color:var(--muted);text-align:center;padding:40px 0;font-size:14px}
 
-  /* ---- 設定 / ライブ管理 ---- */
+  /* ---- 設定 / 管理 ---- */
   .section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
   .section h3{margin:0 0 12px;font-size:14px;color:var(--cyan);display:flex;align-items:center;gap:8px}
   .section h3 .add{margin-left:auto;font-size:13px;background:var(--cyan-d);color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer}
@@ -139,33 +134,31 @@
   .field input{width:120px;background:#0e1116;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;font-size:16px;text-align:right;-webkit-user-select:text;user-select:text}
   .field input.text{flex:1;width:auto;text-align:left}
   .field input[type=date]{text-align:left}
+  .field input[type=checkbox]{width:22px;height:22px;flex:none}
   .btn.save{background:var(--cyan-d);width:100%;margin-top:4px}
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);width:100%}
   .btn.danger{background:transparent;border:1px solid var(--red);color:var(--red);width:100%}
   .hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
 
-  .liverow{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--panel2)}
-  .liverow.active{border-color:var(--cyan)}
-  .liverow .top{display:flex;align-items:center;gap:8px}
-  .liverow .nm{font-size:15px;font-weight:700}
-  .liverow .badge{font-size:10px;background:var(--cyan-d);color:#fff;border-radius:6px;padding:2px 6px}
-  .liverow .dt{font-size:12px;color:var(--cyan);margin-top:1px}
-  .liverow .meta{font-size:12px;color:var(--muted);margin-top:6px}
-  .liverow .btns{display:flex;gap:8px;margin-top:10px}
-  .liverow .btns button{flex:1;font-size:13px;font-weight:700;border-radius:9px;padding:9px;cursor:pointer;border:1px solid var(--line);background:#222934;color:var(--text)}
-  .liverow .btns .sel{background:var(--cyan-d);color:#fff;border:none}
-  .liverow .btns .del{color:var(--red)}
+  .arow{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--panel2)}
+  .arow.active{border-color:var(--cyan)}
+  .arow .top{display:flex;align-items:center;gap:8px}
+  .arow .nm{font-size:15px;font-weight:700}
+  .arow .badge{font-size:10px;background:var(--cyan-d);color:#fff;border-radius:6px;padding:2px 6px}
+  .arow .dt{font-size:12px;color:var(--cyan);margin-top:1px}
+  .arow .meta{font-size:12px;color:var(--muted);margin-top:6px}
+  .arow .btns{display:flex;gap:8px;margin-top:10px}
+  .arow .btns button{flex:1;font-size:13px;font-weight:700;border-radius:9px;padding:9px;cursor:pointer;border:1px solid var(--line);background:#222934;color:var(--text)}
+  .arow .btns .sel{background:var(--cyan-d);color:#fff;border:none}
+  .arow .btns .del{color:var(--red)}
 
   /* ---- nav ---- */
-  nav{
-    position:fixed;left:0;right:0;bottom:0;display:flex;background:#10141a;border-top:1px solid var(--line);
-    padding-bottom:env(safe-area-inset-bottom);
-  }
+  nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:#10141a;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
   nav button{flex:1;background:none;border:none;color:var(--muted);padding:10px 0 8px;font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
   nav button .ic{font-size:19px;line-height:1}
   nav button.active{color:var(--cyan)}
 
-  /* ---- modal (ライブ選択) ---- */
+  /* ---- modal ---- */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:60}
   .modal.show{display:flex}
   .sheet{background:var(--bg);border-top-left-radius:18px;border-top-right-radius:18px;border-top:1px solid var(--line);width:100%;max-height:85vh;overflow-y:auto;padding:16px 16px calc(env(safe-area-inset-bottom) + 20px)}
@@ -176,9 +169,8 @@
   .pickrow .nm{font-size:15px;font-weight:700}
   .pickrow .dt{font-size:11px;color:var(--cyan)}
   .pickrow .chk{margin-left:auto;color:var(--cyan);font-size:18px}
-  .newform{border:1px dashed var(--line);border-radius:12px;padding:13px;margin-top:6px}
+  .newform{border:1px dashed var(--line);border-radius:12px;padding:13px;margin-top:6px;margin-bottom:12px}
 
-  /* toast */
   #toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(20px);background:#222b35;border:1px solid var(--line);color:var(--text);padding:11px 18px;border-radius:30px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:70;box-shadow:var(--shadow)}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   #toast.ok{border-color:var(--green-d)}
@@ -199,8 +191,7 @@
       <div class="info" id="liveBarInfo"></div>
       <span class="chev">切替 ▼</span>
     </div>
-    <div class="stockbar" id="stockbar"></div>
-    <div class="grid" id="prodGrid"></div>
+    <div id="prodGrid"></div>
     <div class="cart" id="cart"></div>
     <div class="total"><span class="l">合計</span><span class="v" id="cartTotal">¥0</span></div>
     <div class="actions">
@@ -218,19 +209,20 @@
     <div class="scopelabel" id="scopeLabel"></div>
     <div class="bigstat"><div class="l">総売上（現金）</div><div class="v" id="stRev">¥0</div></div>
     <div class="cards">
-      <div class="card"><div class="l">販売枚数</div><div class="v" id="stQty">0</div><div class="sub">合計</div></div>
+      <div class="card"><div class="l">販売点数</div><div class="v" id="stQty">0</div><div class="sub">合計</div></div>
       <div class="card"><div class="l">会計回数</div><div class="v" id="stTx">0</div><div class="sub">取引</div></div>
-      <div class="card full">
-        <div class="rowstat"><span>デザインA</span><b id="stA">0 枚</b></div>
-        <div class="rowstat"><span>デザインB</span><b id="stB">0 枚</b></div>
-        <div class="rowstat"><span>通常価格</span><b id="stN">0 枚</b></div>
-        <div class="rowstat"><span>SNS割引</span><b id="stD">0 枚</b></div>
-        <div class="rowstat"><span>割引率</span><b id="stDr">0%</b></div>
-      </div>
     </div>
-    <div id="stStockCards" class="cards" style="margin-top:10px"></div>
-    <div id="stLiveList" style="margin-top:14px"></div>
-    <button class="btn save" style="margin-top:14px" onclick="exportCSV()">CSVをエクスポート</button>
+    <div class="subhead">商品別</div>
+    <div class="section" style="margin-bottom:14px"><div id="stProdRows"></div></div>
+    <div class="subhead" id="stMixHead">価格区分</div>
+    <div class="section" style="margin-bottom:14px">
+      <div class="rowstat"><span>通常価格</span><b id="stN">0 点</b></div>
+      <div class="rowstat"><span>割引</span><b id="stD">0 点</b></div>
+      <div class="rowstat"><span>割引率</span><b id="stDr">0%</b></div>
+    </div>
+    <div id="stStockWrap"></div>
+    <div id="stLiveList"></div>
+    <button class="btn save" style="margin-top:8px" onclick="exportCSV()">CSVをエクスポート</button>
   </section>
 
   <!-- ===== 履歴 ===== -->
@@ -245,16 +237,21 @@
   <!-- ===== 設定 ===== -->
   <section class="view" id="view-set">
     <div class="section">
-      <h3>ライブ管理 <button class="add" onclick="openLivePicker(true)">＋ 追加</button></h3>
-      <div id="liveAdmin"></div>
-      <div class="hint">会計は「選択中（✓）のライブ」に記録される。新規ライブの初期在庫は、前のライブの残数を引き継いだ値が初期表示される（編集可）。</div>
+      <h3>商品 <button class="add" onclick="toggleNewProductForm()">＋ 追加</button></h3>
+      <div class="newform" id="newProdForm" style="display:none">
+        <div class="field"><label>商品名</label><input type="text" class="text" id="npName" placeholder="例: 缶バッジ"></div>
+        <div class="field"><label>通常価格</label><input type="number" inputmode="numeric" id="npPrice" min="0" value="0"></div>
+        <div class="field"><label>割引価格</label><input type="number" inputmode="numeric" id="npDisc" min="0" placeholder="空欄=割引なし"></div>
+        <div class="field"><label>在庫を管理する</label><input type="checkbox" id="npTrack" checked></div>
+        <button class="btn save" onclick="addProduct()">商品を追加</button>
+      </div>
+      <div id="prodAdmin"></div>
+      <div class="hint">割引価格を入れた商品は「通常／割引」の2ボタンに、空欄なら1ボタンになる。在庫管理OFFの商品は枚数を数えない（CD等の委託向け）。</div>
     </div>
     <div class="section">
-      <h3>単価（全ライブ共通）</h3>
-      <div class="field"><label>通常価格</label><input type="number" inputmode="numeric" id="setPriceN" min="0"></div>
-      <div class="field"><label>SNS割引価格</label><input type="number" inputmode="numeric" id="setPriceD" min="0"></div>
-      <button class="btn save" onclick="savePrices()">単価を保存</button>
-      <div class="hint">変更しても過去の記録の金額は当時の単価のまま保持される。</div>
+      <h3>ライブ管理 <button class="add" onclick="openLivePicker(true)">＋ 追加</button></h3>
+      <div id="liveAdmin"></div>
+      <div class="hint">会計は「選択中（✓）のライブ」に記録される。新規ライブの初期在庫は前ライブの残数を引き継いだ値が初期表示される（編集可）。</div>
     </div>
     <button class="btn ghost" onclick="exportCSV()">CSVバックアップ</button>
     <div style="height:10px"></div>
@@ -278,8 +275,7 @@
     <div class="newform" id="newLiveForm" style="display:none">
       <div class="field"><label>日付</label><input type="date" id="nlDate"></div>
       <div class="field"><label>ライブ名</label><input type="text" class="text" id="nlName" placeholder="例: 〇〇ホール 夏フェス"></div>
-      <div class="field"><label>初期在庫A</label><input type="number" inputmode="numeric" id="nlStockA" min="0"></div>
-      <div class="field"><label>初期在庫B</label><input type="number" inputmode="numeric" id="nlStockB" min="0"></div>
+      <div id="nlStockFields"></div>
       <button class="btn save" onclick="addLive()">このライブを追加して選択</button>
     </div>
     <button class="btn ghost" id="newLiveBtn" style="margin-top:6px" onclick="toggleNewLiveForm()">＋ 新しいライブを登録</button>
@@ -289,95 +285,120 @@
 <div id="toast"></div>
 
 <script>
-const KEY='mcp_sticker_v2', OLD='mcp_sticker_v1';
-const DESIGNS=['A','B'];
-const TYPES=[{k:'normal',jp:'通常'},{k:'discount',jp:'SNS割引'}];
+const KEY='mcp_sticker_v3', V2='mcp_sticker_v2', V1='mcp_sticker_v1';
+const TYPES={normal:'通常',discount:'割引'};
 
-const defaults={ settings:{priceNormal:300,priceDiscount:200}, events:[], activeEventId:null, sales:[] };
+const defaults={
+  products:[
+    {id:'p_a',name:'ステッカーA',price:300,discount:200,trackStock:true},
+    {id:'p_b',name:'ステッカーB',price:300,discount:200,trackStock:true}
+  ],
+  events:[], activeEventId:null, sales:[]
+};
 
 let db=load();
-let cart={};
-let statScope='event';
-let histScope='event';
+let cart={};               // key `${productId}_${type}` -> qty
+let statScope='event', histScope='event';
 
+function mkId(p){ return p+'_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); }
 function load(){
   try{
     const raw=localStorage.getItem(KEY);
-    if(raw){ const d=JSON.parse(raw); return normalize(d); }
-    const old=localStorage.getItem(OLD);
-    if(old){ return migrate(JSON.parse(old)); }
+    if(raw) return normalize(JSON.parse(raw));
+    const v2=localStorage.getItem(V2); if(v2) return migrate2(JSON.parse(v2));
+    const v1=localStorage.getItem(V1); if(v1) return migrate1(JSON.parse(v1));
   }catch(e){}
   return structuredClone(defaults);
 }
 function normalize(d){
-  d.settings={...defaults.settings,...(d.settings||{})};
+  d.products=Array.isArray(d.products)?d.products:[];
   d.events=Array.isArray(d.events)?d.events:[];
   d.sales=Array.isArray(d.sales)?d.sales:[];
+  for(const e of d.events){ if(!e.stock||typeof e.stock!=='object') e.stock={}; }
+  for(const p of d.products){ if(p.discount==='') p.discount=null; if(p.trackStock===undefined) p.trackStock=true; }
   if(d.activeEventId===undefined) d.activeEventId=null;
   return d;
 }
-function migrate(old){
-  const os=old.settings||{};
+function baseProductsFrom(prices){
+  return [
+    {id:'p_a',name:'ステッカーA',price:prices.n,discount:prices.d,trackStock:true},
+    {id:'p_b',name:'ステッカーB',price:prices.n,discount:prices.d,trackStock:true}
+  ];
+}
+function mapItem(it){ // 旧 design A/B -> productId
+  const pid=it.design==='B'?'p_b':'p_a';
+  const name=it.design==='B'?'ステッカーB':'ステッカーA';
+  return {productId:pid,name,type:it.type,qty:it.qty,unit:it.unit};
+}
+function migrate2(v){
+  const s=v.settings||{};
+  const products=baseProductsFrom({n:s.priceNormal||300,d:s.priceDiscount||200});
+  const events=(v.events||[]).map(e=>({id:e.id,date:e.date,name:e.name,stock:{p_a:e.stockA||0,p_b:e.stockB||0}}));
+  const sales=(v.sales||[]).map(s2=>({id:s2.id,eventId:s2.eventId,ts:s2.ts,items:(s2.items||[]).map(mapItem),total:s2.total}));
+  const d={products,events,activeEventId:v.activeEventId||null,sales};
+  localStorage.setItem(KEY,JSON.stringify(d)); return d;
+}
+function migrate1(v){
+  const s=v.settings||{};
+  const products=baseProductsFrom({n:s.priceNormal||300,d:s.priceDiscount||200});
   const id=mkId('e');
-  const ev={id,date:todayStr(),name:(os.eventName||'ライブ1'),stockA:os.stockA||0,stockB:os.stockB||0};
-  const sales=(old.sales||[]).map(s=>({...s,eventId:id}));
-  const d={ settings:{priceNormal:os.priceNormal||300,priceDiscount:os.priceDiscount||200}, events:[ev], activeEventId:id, sales };
-  localStorage.setItem(KEY,JSON.stringify(d));
-  return d;
+  const ev={id,date:todayStr(),name:(s.eventName||'ライブ1'),stock:{p_a:s.stockA||0,p_b:s.stockB||0}};
+  const sales=(v.sales||[]).map(s2=>({id:s2.id,eventId:id,ts:s2.ts,items:(s2.items||[]).map(mapItem),total:s2.total}));
+  const d={products,events:[ev],activeEventId:id,sales};
+  localStorage.setItem(KEY,JSON.stringify(d)); return d;
 }
 function save(){ localStorage.setItem(KEY,JSON.stringify(db)); }
-function mkId(p){ return p+'_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); }
 
 function yen(n){ return '¥'+Number(n||0).toLocaleString('ja-JP'); }
-function unitPrice(type){ return type==='discount'?db.settings.priceDiscount:db.settings.priceNormal; }
-function todayStr(){ const d=new Date();const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function hasDiscount(p){ return p.discount!=null && p.discount!==''; }
+function unitPrice(p,type){ return type==='discount'&&hasDiscount(p)?p.discount:p.price; }
+function todayStr(){ const d=new Date();const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
 function fmtDate(s){ if(!s)return '';const[y,m,d]=s.split('-');return `${+m}/${+d}`; }
 function fmtDateFull(s){ if(!s)return '';const[y,m,d]=s.split('-');return `${y}/${+m}/${+d}`; }
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 function activeEvent(){ return db.events.find(e=>e.id===db.activeEventId)||null; }
 function eventById(id){ return db.events.find(e=>e.id===id)||null; }
+function productById(id){ return db.products.find(p=>p.id===id)||null; }
 
 // ---- 集計ヘルパ（eventId=null で全期間）----
 function salesFor(eventId){ return eventId? db.sales.filter(s=>s.eventId===eventId) : db.sales; }
-function soldByDesign(eventId,d){let n=0;for(const s of salesFor(eventId))for(const it of s.items)if(it.design===d)n+=it.qty;return n;}
+function soldByProduct(eventId,pid){let n=0;for(const s of salesFor(eventId))for(const it of s.items)if(it.productId===pid)n+=it.qty;return n;}
 function soldByType(eventId,t){let n=0;for(const s of salesFor(eventId))for(const it of s.items)if(it.type===t)n+=it.qty;return n;}
 function totalSold(eventId){let n=0;for(const s of salesFor(eventId))for(const it of s.items)n+=it.qty;return n;}
 function totalRevenue(eventId){let n=0;for(const s of salesFor(eventId))n+=s.total;return n;}
-function remaining(eventId,d){const ev=eventById(eventId);if(!ev)return 0;const init=d==='A'?ev.stockA:ev.stockB;return init-soldByDesign(eventId,d);}
-function cartQtyForDesign(d){let n=0;for(const k in cart){if(k.startsWith(d+'_'))n+=cart[k];}return n;}
+function initStock(eventId,pid){const e=eventById(eventId);return e&&e.stock&&e.stock[pid]!=null?e.stock[pid]:0;}
+function remaining(eventId,pid){return initStock(eventId,pid)-soldByProduct(eventId,pid);}
+function cartQtyForProduct(pid){let n=0;for(const k in cart){if(k.indexOf(pid+'_')===0)n+=cart[k];}return n;}
 
 // ---- 会計画面 ----
 function renderLiveBar(){
   const ev=activeEvent();
   const el=document.getElementById('liveBarInfo');
-  if(!ev){ el.innerHTML='<div class="nm none">ライブ未選択</div><div class="dt">タップして登録</div>'; }
-  else{ el.innerHTML=`<div class="nm">${esc(ev.name)}</div><div class="dt">${fmtDateFull(ev.date)}</div>`; }
+  el.innerHTML = ev
+    ? `<div class="nm">${esc(ev.name)}</div><div class="dt">${fmtDateFull(ev.date)}</div>`
+    : '<div class="nm none">ライブ未選択</div><div class="dt">タップして登録</div>';
 }
-function renderStockbar(){
+function renderProducts(){
   const ev=activeEvent();
-  const el=document.getElementById('stockbar');
-  if(!ev){ el.innerHTML=''; return; }
-  el.innerHTML=DESIGNS.map(d=>{
-    const r=remaining(ev.id,d)-cartQtyForDesign(d);
-    let cls=''; if(r<=0)cls='out'; else if(r<=5)cls='low';
-    return `<div class="stockchip ${cls}"><div class="d">デザイン${d} 残り</div><div class="n">${r}</div><div class="u">枚</div></div>`;
-  }).join('');
-}
-function renderGrid(){
   const el=document.getElementById('prodGrid');
-  const has=!!activeEvent();
-  let html='';
-  for(const d of DESIGNS){
-    for(const t of TYPES){
-      const disc=t.k==='discount';
-      html+=`<div class="pbtn ${disc?'discount':''} ${has?'':'disabled'}" onclick="addToCart('${d}','${t.k}')">
-        <div class="des ${d==='B'?'b':''}">${d}</div>
-        <div class="typ">${t.jp}</div>
-        <div class="pr">${yen(unitPrice(t.k))}</div>
-      </div>`;
+  if(db.products.length===0){ el.innerHTML='<div class="emptybox">設定タブで商品を登録してください</div>'; return; }
+  const has=!!ev;
+  el.innerHTML=db.products.map(p=>{
+    let stockHtml='';
+    if(p.trackStock){
+      if(has){ const r=remaining(ev.id,p.id)-cartQtyForProduct(p.id); let c=''; if(r<=0)c='out'; else if(r<=5)c='low'; stockHtml=`<span class="pstock ${c}">残り ${r}</span>`; }
+      else stockHtml='<span class="pstock">—</span>';
     }
-  }
-  el.innerHTML=html;
+    const btns = hasDiscount(p)
+      ? `<button class="pbuy" onclick="addToCart('${p.id}','normal')"><span class="k">通常</span><span class="pr">${yen(p.price)}</span></button>
+         <button class="pbuy disc" onclick="addToCart('${p.id}','discount')"><span class="k">割引</span><span class="pr">${yen(p.discount)}</span></button>`
+      : `<button class="pbuy" onclick="addToCart('${p.id}','normal')"><span class="pr">${yen(p.price)}</span></button>`;
+    return `<div class="prod ${has?'':'disabled'}">
+      <div class="phead"><span class="pname">${esc(p.name)}</span>${stockHtml}</div>
+      <div class="pbtns">${btns}</div>
+    </div>`;
+  }).join('');
 }
 function renderCart(){
   const el=document.getElementById('cart');
@@ -385,13 +406,13 @@ function renderCart(){
   if(keys.length===0){ el.innerHTML='<div class="empty">商品をタップして追加</div>'; }
   else{
     el.innerHTML=keys.map(k=>{
-      const [d,t]=k.split('_');
-      const jp=TYPES.find(x=>x.k===t).jp;
-      const up=unitPrice(t);
+      const {pid,type}=splitKey(k);
+      const p=productById(pid); if(!p) return '';
+      const up=unitPrice(p,type);
+      const tlabel=(type==='discount'&&hasDiscount(p))?' 割引':'';
       return `<div class="citem">
-        <div class="lbl">デザイン${d} <small>${jp} ${yen(up)}</small></div>
-        <div class="qty">×${cart[k]}</div>
-        <div class="sub">${yen(up*cart[k])}</div>
+        <div class="lbl">${esc(p.name)}<small>${tlabel} ${yen(up)}</small></div>
+        <div class="qty">×${cart[k]}</div><div class="sub">${yen(up*cart[k])}</div>
         <div class="x" onclick="removeFromCart('${k}')">−</div>
       </div>`;
     }).join('');
@@ -400,74 +421,73 @@ function renderCart(){
   document.getElementById('cartTotal').textContent=yen(tot);
   document.getElementById('confirmBtn').disabled=(tot<=0||!activeEvent());
 }
-function cartTotal(){let t=0;for(const k in cart){const type=k.split('_')[1];t+=unitPrice(type)*cart[k];}return t;}
+function splitKey(k){ const i=k.lastIndexOf('_'); return {pid:k.slice(0,i),type:k.slice(i+1)}; }
+function cartTotal(){let t=0;for(const k in cart){const {pid,type}=splitKey(k);const p=productById(pid);if(p)t+=unitPrice(p,type)*cart[k];}return t;}
 
-function addToCart(d,t){
+function addToCart(pid,type){
   const ev=activeEvent();
   if(!ev){ toast('先にライブを登録してください','warn'); openLivePicker(); return; }
-  const r=remaining(ev.id,d)-cartQtyForDesign(d);
-  if(r<=0){ toast('デザイン'+d+'は在庫切れ（記録は可能）','warn'); }
-  const k=d+'_'+t; cart[k]=(cart[k]||0)+1;
-  renderStockbar(); renderCart();
+  const p=productById(pid); if(!p) return;
+  if(p.trackStock){ const r=remaining(ev.id,pid)-cartQtyForProduct(pid); if(r<=0) toast(p.name+'は在庫切れ（記録は可能）','warn'); }
+  const k=pid+'_'+type; cart[k]=(cart[k]||0)+1;
+  renderProducts(); renderCart();
 }
-function removeFromCart(k){
-  cart[k]=(cart[k]||0)-1; if(cart[k]<=0) delete cart[k];
-  renderStockbar(); renderCart();
-}
-function clearCart(){ cart={}; renderStockbar(); renderCart(); }
+function removeFromCart(k){ cart[k]=(cart[k]||0)-1; if(cart[k]<=0) delete cart[k]; renderProducts(); renderCart(); }
+function clearCart(){ cart={}; renderProducts(); renderCart(); }
 
 function confirmSale(){
-  const ev=activeEvent();
-  if(!ev){ toast('ライブが選択されていません','warn'); return; }
+  const ev=activeEvent(); if(!ev){ toast('ライブが選択されていません','warn'); return; }
   const items=[];
-  for(const k in cart){
-    if(cart[k]<=0) continue;
-    const [d,t]=k.split('_');
-    items.push({design:d,type:t,qty:cart[k],unit:unitPrice(t)});
-  }
+  for(const k in cart){ if(cart[k]<=0) continue; const {pid,type}=splitKey(k); const p=productById(pid); if(!p) continue;
+    items.push({productId:pid,name:p.name,type:(type==='discount'&&hasDiscount(p))?'discount':'normal',qty:cart[k],unit:unitPrice(p,type)}); }
   if(items.length===0) return;
   const total=cartTotal();
   db.sales.push({id:mkId('s'),eventId:ev.id,ts:Date.now(),items,total});
-  save();
-  cart={};
-  renderAll();
-  toast('記録しました '+yen(total),'ok');
+  save(); cart={}; renderAll(); toast('記録しました '+yen(total),'ok');
 }
 
-// ---- 集計画面 ----
+// ---- 集計 ----
 function setStatScope(s){ statScope=s; document.getElementById('scEvent').classList.toggle('active',s==='event'); document.getElementById('scAll').classList.toggle('active',s==='all'); renderStats(); }
 function renderStats(){
   const ev=activeEvent();
   const useEvent=(statScope==='event' && ev);
-  const scopeId=useEvent?ev.id:null;
+  const id=useEvent?ev.id:null;
   document.getElementById('scopeLabel').textContent=useEvent?`${esc(ev.name)}（${fmtDateFull(ev.date)}）`:(statScope==='event'?'ライブ未選択':'全ライブ合計');
-  document.getElementById('stRev').textContent=yen(totalRevenue(scopeId));
-  document.getElementById('stQty').textContent=totalSold(scopeId);
-  document.getElementById('stTx').textContent=salesFor(scopeId).length;
-  document.getElementById('stA').textContent=soldByDesign(scopeId,'A')+' 枚';
-  document.getElementById('stB').textContent=soldByDesign(scopeId,'B')+' 枚';
-  document.getElementById('stN').textContent=soldByType(scopeId,'normal')+' 枚';
-  document.getElementById('stD').textContent=soldByType(scopeId,'discount')+' 枚';
-  const ts=totalSold(scopeId);
-  document.getElementById('stDr').textContent=(ts?Math.round(soldByType(scopeId,'discount')/ts*100):0)+'%';
-  // 在庫カード（このライブ時のみ）
-  const sc=document.getElementById('stStockCards');
-  if(useEvent){
-    sc.innerHTML=DESIGNS.map(d=>`<div class="card"><div class="l">在庫 ${d}</div><div class="v">${remaining(ev.id,d)}</div><div class="sub">初期 ${d==='A'?ev.stockA:ev.stockB}</div></div>`).join('');
-  }else sc.innerHTML='';
-  // ライブ別内訳（全期間時のみ）
+  document.getElementById('stRev').textContent=yen(totalRevenue(id));
+  document.getElementById('stQty').textContent=totalSold(id);
+  document.getElementById('stTx').textContent=salesFor(id).length;
+  // 商品別
+  document.getElementById('stProdRows').innerHTML = db.products.length
+    ? db.products.map(p=>{
+        const q=soldByProduct(id,p.id);
+        const rev=salesFor(id).reduce((a,s)=>a+s.items.filter(it=>it.productId===p.id).reduce((b,it)=>b+it.unit*it.qty,0),0);
+        return `<div class="rowstat"><span>${esc(p.name)}</span><b>${q} 点<span class="mut">${yen(rev)}</span></b></div>`;
+      }).join('')
+    : '<div class="hint" style="margin:0">商品が未登録</div>';
+  // 価格区分
+  const ts=totalSold(id);
+  document.getElementById('stN').textContent=soldByType(id,'normal')+' 点';
+  document.getElementById('stD').textContent=soldByType(id,'discount')+' 点';
+  document.getElementById('stDr').textContent=(ts?Math.round(soldByType(id,'discount')/ts*100):0)+'%';
+  // 在庫（このライブ時のみ）
+  const sw=document.getElementById('stStockWrap');
+  const tracked=db.products.filter(p=>p.trackStock);
+  if(useEvent && tracked.length){
+    sw.innerHTML='<div class="subhead">在庫（このライブ）</div><div class="section" style="margin-bottom:14px">'+
+      tracked.map(p=>`<div class="rowstat"><span>${esc(p.name)}</span><b>${remaining(ev.id,p.id)}<span class="mut">初期 ${initStock(ev.id,p.id)}</span></b></div>`).join('')+'</div>';
+  }else sw.innerHTML='';
+  // ライブ別（全期間時）
   const ll=document.getElementById('stLiveList');
   if(!useEvent && db.events.length){
-    ll.innerHTML='<div class="hint" style="margin:0 0 8px">ライブ別</div>'+db.events.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`
-      <div class="livesum"><div><div class="nm">${esc(e.name)}</div><div class="dt">${fmtDateFull(e.date)}</div><div class="q">${totalSold(e.id)}枚・${salesFor(e.id).length}会計</div></div><div class="a">${yen(totalRevenue(e.id))}</div></div>`).join('');
+    ll.innerHTML='<div class="subhead">ライブ別</div>'+db.events.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`
+      <div class="livesum"><div><div class="nm">${esc(e.name)}</div><div class="dt">${fmtDateFull(e.date)}</div><div class="q">${totalSold(e.id)}点・${salesFor(e.id).length}会計</div></div><div class="a">${yen(totalRevenue(e.id))}</div></div>`).join('');
   }else ll.innerHTML='';
-  // header
   document.getElementById('hdrRev').textContent=yen(totalRevenue(ev?ev.id:null));
   document.getElementById('hdrLbl').textContent=ev?'このライブ売上':'売上';
 }
 
 // ---- 履歴 ----
-function fmtTime(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,'0');return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
+function fmtTime(ts){const d=new Date(ts);const z=n=>String(n).padStart(2,'0');return `${z(d.getMonth()+1)}/${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;}
 function setHistScope(s){ histScope=s; document.getElementById('hsEvent').classList.toggle('active',s==='event'); document.getElementById('hsAll').classList.toggle('active',s==='all'); renderHist(); }
 function renderHist(){
   const ev=activeEvent();
@@ -476,29 +496,90 @@ function renderHist(){
   const el=document.getElementById('histList');
   if(list.length===0){ el.innerHTML='<div class="emptybox">'+(histScope==='event'&&!ev?'ライブを選択してください':'まだ記録がありません')+'</div>'; return; }
   el.innerHTML=list.map(s=>{
-    const desc=s.items.map(it=>`${it.design}${it.type==='discount'?'(割)':''}×${it.qty}`).join(' / ');
+    const desc=s.items.map(it=>`${esc(it.name)}${it.type==='discount'?'(割)':''}×${it.qty}`).join(' / ');
     const e=eventById(s.eventId);
     const lvTag=(!useEvent && e)?`<div class="lv">${esc(e.name)}</div>`:'';
-    return `<div class="hitem">
-      <div>${lvTag}<div class="t">${fmtTime(s.ts)}</div><div class="d">${desc}</div></div>
-      <div class="a">${yen(s.total)}</div>
-      <button class="del" onclick="deleteSale('${s.id}')">取消</button>
-    </div>`;
+    return `<div class="hitem"><div>${lvTag}<div class="t">${fmtTime(s.ts)}</div><div class="d">${desc}</div></div>
+      <div class="a">${yen(s.total)}</div><button class="del" onclick="deleteSale('${s.id}')">取消</button></div>`;
   }).join('');
 }
 function deleteSale(id){
-  const s=db.sales.find(x=>x.id===id);
-  if(!s) return;
+  const s=db.sales.find(x=>x.id===id); if(!s) return;
   if(!confirm('この会計（'+yen(s.total)+'）を取り消す？\n在庫は元に戻ります。')) return;
-  db.sales=db.sales.filter(x=>x.id!==id);
-  save(); renderAll(); toast('取り消しました','warn');
+  db.sales=db.sales.filter(x=>x.id!==id); save(); renderAll(); toast('取り消しました','warn');
+}
+
+// ---- 商品管理 ----
+function toggleNewProductForm(){
+  const f=document.getElementById('newProdForm'); const show=f.style.display==='none';
+  if(show){ document.getElementById('npName').value=''; document.getElementById('npPrice').value='0'; document.getElementById('npDisc').value=''; document.getElementById('npTrack').checked=true; }
+  f.style.display=show?'block':'none';
+}
+function numOr(id,def){ const v=parseInt(document.getElementById(id).value,10); return isNaN(v)||v<0?def:v; }
+function addProduct(){
+  const name=(document.getElementById('npName').value||'').trim();
+  if(!name){ toast('商品名を入力してください','warn'); return; }
+  const dv=document.getElementById('npDisc').value.trim();
+  const p={id:mkId('p'),name,price:numOr('npPrice',0),discount:dv===''?null:numOr('npDisc',null),trackStock:document.getElementById('npTrack').checked};
+  db.products.push(p); save(); document.getElementById('newProdForm').style.display='none'; renderAll(); toast('商品を追加しました','ok');
+}
+function renderProdAdmin(){
+  const el=document.getElementById('prodAdmin');
+  if(db.products.length===0){ el.innerHTML='<div class="hint" style="margin:6px 0">まだ商品がありません。「＋ 追加」から登録してください。</div>'; return; }
+  el.innerHTML=db.products.map(p=>{
+    const priceTxt=hasDiscount(p)?`通常 ${yen(p.price)} / 割引 ${yen(p.discount)}`:`${yen(p.price)}`;
+    const sold=soldByProduct(null,p.id);
+    return `<div class="arow" id="pr_${p.id}">
+      <div class="top"><div><div class="nm">${esc(p.name)}</div><div class="dt">${priceTxt}</div></div></div>
+      <div class="meta">${p.trackStock?'在庫管理 ON':'在庫管理 OFF'} ・ 累計 ${sold}点 売上 ${yen(soldRevProduct(p.id))}</div>
+      <div class="btns"><button onclick="editProduct('${p.id}')">編集</button><button class="del" onclick="removeProduct('${p.id}')">削除</button></div>
+    </div>`;
+  }).join('');
+}
+function soldRevProduct(pid){return db.sales.reduce((a,s)=>a+s.items.filter(it=>it.productId===pid).reduce((b,it)=>b+it.unit*it.qty,0),0);}
+function editProduct(id){
+  const p=productById(id); if(!p)return;
+  document.getElementById('pr_'+id).innerHTML=`
+    <div class="field"><label>商品名</label><input type="text" class="text" id="ep_name_${id}" value="${esc(p.name)}"></div>
+    <div class="field"><label>通常価格</label><input type="number" inputmode="numeric" id="ep_price_${id}" value="${p.price}"></div>
+    <div class="field"><label>割引価格</label><input type="number" inputmode="numeric" id="ep_disc_${id}" placeholder="空欄=割引なし" value="${hasDiscount(p)?p.discount:''}"></div>
+    <div class="field"><label>在庫を管理する</label><input type="checkbox" id="ep_track_${id}" ${p.trackStock?'checked':''}></div>
+    <div class="btns"><button class="sel" onclick="saveProduct('${id}')">保存</button><button onclick="renderProdAdmin()">取消</button></div>`;
+}
+function saveProduct(id){
+  const p=productById(id); if(!p)return;
+  const name=(document.getElementById('ep_name_'+id).value||'').trim();
+  if(!name){ toast('商品名を入力してください','warn'); return; }
+  const dv=document.getElementById('ep_disc_'+id).value.trim();
+  p.name=name; p.price=numOr('ep_price_'+id,0); p.discount=dv===''?null:numOr('ep_disc_'+id,null); p.trackStock=document.getElementById('ep_track_'+id).checked;
+  save(); renderAll(); toast('保存しました','ok');
+}
+function removeProduct(id){
+  const p=productById(id); if(!p)return;
+  const sold=soldByProduct(null,id);
+  if(!confirm(`「${p.name}」を商品リストから削除しますか？\n${sold>0?'過去の販売履歴('+sold+'点)はそのまま残ります。':''}`)) return;
+  db.products=db.products.filter(x=>x.id!==id);
+  for(const e of db.events){ if(e.stock) delete e.stock[id]; }
+  save(); renderAll(); toast('削除しました','warn');
+}
+
+// ---- 在庫入力フィールド（ライブ用） ----
+function stockFieldsHTML(prefix,stockMap){
+  const tracked=db.products.filter(p=>p.trackStock);
+  if(tracked.length===0) return '<div class="hint">在庫管理ONの商品がありません</div>';
+  return tracked.map(p=>{const v=(stockMap&&stockMap[p.id]!=null)?stockMap[p.id]:0;
+    return `<div class="field"><label>${esc(p.name)}</label><input type="number" inputmode="numeric" id="${prefix}_stk_${p.id}" min="0" value="${v}"></div>`;}).join('');
+}
+function readStockFields(prefix){
+  const stock={};
+  for(const p of db.products.filter(x=>x.trackStock)){ const el=document.getElementById(prefix+'_stk_'+p.id); if(el) stock[p.id]=Math.max(0,parseInt(el.value,10)||0); }
+  return stock;
 }
 
 // ---- ライブ選択モーダル ----
 function openLivePicker(forceForm){
   renderLivePick();
-  const form=document.getElementById('newLiveForm');
-  const btn=document.getElementById('newLiveBtn');
+  const form=document.getElementById('newLiveForm'), btn=document.getElementById('newLiveBtn');
   if(forceForm||db.events.length===0){ prepNewLiveForm(); form.style.display='block'; btn.style.display='none'; }
   else{ form.style.display='none'; btn.style.display='block'; }
   document.getElementById('liveModal').classList.add('show');
@@ -510,144 +591,105 @@ function renderLivePick(){
   el.innerHTML=db.events.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>{
     const act=e.id===db.activeEventId;
     return `<div class="pickrow ${act?'active':''}" onclick="selectLive('${e.id}')">
-      <div><div class="nm">${esc(e.name)}</div><div class="dt">${fmtDateFull(e.date)} ・ 在庫 A${remaining(e.id,'A')}/B${remaining(e.id,'B')}</div></div>
-      ${act?'<div class="chk">✓</div>':''}
-    </div>`;
+      <div><div class="nm">${esc(e.name)}</div><div class="dt">${fmtDateFull(e.date)}</div></div>${act?'<div class="chk">✓</div>':''}</div>`;
   }).join('');
 }
 function selectLive(id){ db.activeEventId=id; save(); cart={}; renderAll(); closeLivePicker(); toast('ライブを切り替えました','ok'); }
 function toggleNewLiveForm(){
-  const form=document.getElementById('newLiveForm');
-  const show=form.style.display==='none';
+  const form=document.getElementById('newLiveForm'); const show=form.style.display==='none';
   if(show) prepNewLiveForm();
-  form.style.display=show?'block':'none';
-  document.getElementById('newLiveBtn').style.display=show?'none':'block';
+  form.style.display=show?'block':'none'; document.getElementById('newLiveBtn').style.display=show?'none':'block';
 }
 function prepNewLiveForm(){
   document.getElementById('nlDate').value=todayStr();
   document.getElementById('nlName').value='';
-  const ev=activeEvent();
-  document.getElementById('nlStockA').value=ev?remaining(ev.id,'A'):0;
-  document.getElementById('nlStockB').value=ev?remaining(ev.id,'B'):0;
+  const ev=activeEvent(); const prefill={};
+  if(ev) for(const p of db.products.filter(x=>x.trackStock)) prefill[p.id]=Math.max(0,remaining(ev.id,p.id));
+  document.getElementById('nlStockFields').innerHTML=stockFieldsHTML('nl',prefill);
 }
 function addLive(){
   const name=(document.getElementById('nlName').value||'').trim();
   const date=document.getElementById('nlDate').value||todayStr();
   if(!name){ toast('ライブ名を入力してください','warn'); return; }
-  const num=id=>{const v=parseInt(document.getElementById(id).value,10);return isNaN(v)||v<0?0:v;};
-  const ev={id:mkId('e'),date,name,stockA:num('nlStockA'),stockB:num('nlStockB')};
-  db.events.push(ev); db.activeEventId=ev.id; save(); cart={}; renderAll(); closeLivePicker();
-  toast('ライブを追加しました','ok');
+  const ev={id:mkId('e'),date,name,stock:readStockFields('nl')};
+  db.events.push(ev); db.activeEventId=ev.id; save(); cart={}; renderAll(); closeLivePicker(); toast('ライブを追加しました','ok');
 }
 
 // ---- ライブ管理（設定）----
 function renderLiveAdmin(){
   const el=document.getElementById('liveAdmin');
-  if(db.events.length===0){ el.innerHTML='<div class="hint" style="margin:0 0 6px">まだライブがありません。「＋ 追加」から登録してください。</div>'; return; }
+  if(db.events.length===0){ el.innerHTML='<div class="hint" style="margin:6px 0">まだライブがありません。「＋ 追加」から登録してください。</div>'; return; }
   el.innerHTML=db.events.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>{
     const act=e.id===db.activeEventId;
-    return `<div class="liverow ${act?'active':''}" id="lr_${e.id}">
+    const stk=db.products.filter(p=>p.trackStock).map(p=>`${p.name.slice(0,4)} ${remaining(e.id,p.id)}`).join(' / ')||'—';
+    return `<div class="arow ${act?'active':''}" id="lr_${e.id}">
       <div class="top"><div><div class="nm">${esc(e.name)}</div><div class="dt">${fmtDateFull(e.date)}</div></div>${act?'<div class="badge">選択中</div>':''}</div>
-      <div class="meta">売上 ${yen(totalRevenue(e.id))} ・ ${totalSold(e.id)}枚 ・ 在庫 A${remaining(e.id,'A')}/B${remaining(e.id,'B')}（初期 A${e.stockA}/B${e.stockB}）</div>
-      <div class="btns">
-        ${act?'':`<button class="sel" onclick="selectLiveAdmin('${e.id}')">選択</button>`}
-        <button onclick="editLive('${e.id}')">編集</button>
-        <button class="del" onclick="removeLive('${e.id}')">削除</button>
-      </div>
+      <div class="meta">売上 ${yen(totalRevenue(e.id))} ・ ${totalSold(e.id)}点 ・ 残 ${esc(stk)}</div>
+      <div class="btns">${act?'':`<button class="sel" onclick="selectLiveAdmin('${e.id}')">選択</button>`}<button onclick="editLive('${e.id}')">編集</button><button class="del" onclick="removeLive('${e.id}')">削除</button></div>
     </div>`;
   }).join('');
 }
 function selectLiveAdmin(id){ db.activeEventId=id; save(); cart={}; renderAll(); toast('選択中のライブを変更','ok'); }
 function editLive(id){
   const e=eventById(id); if(!e)return;
-  const el=document.getElementById('lr_'+id);
-  el.innerHTML=`
+  document.getElementById('lr_'+id).innerHTML=`
     <div class="field"><label>日付</label><input type="date" id="ed_date_${id}" value="${e.date}"></div>
     <div class="field"><label>ライブ名</label><input type="text" class="text" id="ed_name_${id}" value="${esc(e.name)}"></div>
-    <div class="field"><label>初期在庫A</label><input type="number" inputmode="numeric" id="ed_sa_${id}" value="${e.stockA}"></div>
-    <div class="field"><label>初期在庫B</label><input type="number" inputmode="numeric" id="ed_sb_${id}" value="${e.stockB}"></div>
+    ${stockFieldsHTML('ed',e.stock)}
     <div class="btns"><button class="sel" onclick="saveLive('${id}')">保存</button><button onclick="renderLiveAdmin()">取消</button></div>`;
 }
 function saveLive(id){
   const e=eventById(id); if(!e)return;
   const name=(document.getElementById('ed_name_'+id).value||'').trim();
   if(!name){ toast('ライブ名を入力してください','warn'); return; }
-  const num=eid=>{const v=parseInt(document.getElementById(eid).value,10);return isNaN(v)||v<0?0:v;};
-  e.date=document.getElementById('ed_date_'+id).value||e.date;
-  e.name=name; e.stockA=num('ed_sa_'+id); e.stockB=num('ed_sb_'+id);
+  e.date=document.getElementById('ed_date_'+id).value||e.date; e.name=name;
+  const ns=readStockFields('ed'); e.stock={...e.stock,...ns};
   save(); renderAll(); toast('保存しました','ok');
 }
 function removeLive(id){
   const e=eventById(id); if(!e)return;
   const n=salesFor(id).length;
-  if(n>0){ if(!confirm(`「${e.name}」には会計が${n}件あります。\nライブごと全部削除しますか？`)) return; }
-  else{ if(!confirm(`「${e.name}」を削除しますか？`)) return; }
-  db.sales=db.sales.filter(s=>s.eventId!==id);
-  db.events=db.events.filter(x=>x.id!==id);
+  if(!confirm(n>0?`「${e.name}」には会計が${n}件あります。\nライブごと全部削除しますか？`:`「${e.name}」を削除しますか？`)) return;
+  db.sales=db.sales.filter(s=>s.eventId!==id); db.events=db.events.filter(x=>x.id!==id);
   if(db.activeEventId===id) db.activeEventId=db.events.length?db.events[0].id:null;
   save(); renderAll(); toast('削除しました','warn');
 }
 
-// ---- 設定（単価）----
-function fillPrices(){
-  document.getElementById('setPriceN').value=db.settings.priceNormal;
-  document.getElementById('setPriceD').value=db.settings.priceDiscount;
-  document.getElementById('meta').textContent='ライブ '+db.events.length+'件 ・ 会計 '+db.sales.length+'件 ・ ローカル保存（この端末内）';
-}
-function savePrices(){
-  const num=(id,def)=>{const v=parseInt(document.getElementById(id).value,10);return isNaN(v)||v<0?def:v;};
-  db.settings.priceNormal=num('setPriceN',300);
-  db.settings.priceDiscount=num('setPriceD',200);
-  save(); renderAll(); toast('単価を保存しました','ok');
-}
 function resetAll(){
-  if(!confirm('全てのライブ・販売記録を削除します。よろしいですか？')) return;
+  if(!confirm('全ての商品・ライブ・販売記録を削除します。よろしいですか？')) return;
   if(!confirm('本当に削除します。元に戻せません。')) return;
   db=structuredClone(defaults); save(); cart={}; renderAll(); toast('リセットしました','warn');
 }
 
 // ---- CSV ----
 function exportCSV(){
-  const rows=[['日付','ライブ名','日時','デザイン','種別','枚数','単価','小計','会計ID']];
-  for(const s of db.sales){
-    const e=eventById(s.eventId);
-    for(const it of s.items){
-      rows.push([e?fmtDateFull(e.date):'',e?e.name:'(不明)',fmtTimeFull(s.ts),it.design,TYPES.find(x=>x.k===it.type).jp,it.qty,it.unit,it.unit*it.qty,s.id]);
-    }
-  }
-  rows.push([]);
-  rows.push(['--- ライブ別集計 ---']);
-  rows.push(['日付','ライブ名','総売上','販売枚数','A枚数','B枚数','通常','割引','在庫A','在庫B']);
-  for(const e of db.events.slice().sort((a,b)=>a.date.localeCompare(b.date))){
-    rows.push([fmtDateFull(e.date),e.name,totalRevenue(e.id),totalSold(e.id),soldByDesign(e.id,'A'),soldByDesign(e.id,'B'),soldByType(e.id,'normal'),soldByType(e.id,'discount'),remaining(e.id,'A'),remaining(e.id,'B')]);
-  }
-  rows.push([]);
-  rows.push(['--- 全期間合計 ---']);
-  rows.push(['総売上',totalRevenue(null)]);
-  rows.push(['販売枚数合計',totalSold(null)]);
+  const rows=[['日付','ライブ名','日時','商品','種別','数量','単価','小計','会計ID']];
+  for(const s of db.sales){ const e=eventById(s.eventId);
+    for(const it of s.items) rows.push([e?fmtDateFull(e.date):'',e?e.name:'(不明)',fmtTimeFull(s.ts),it.name,TYPES[it.type]||it.type,it.qty,it.unit,it.unit*it.qty,s.id]); }
+  rows.push([]); rows.push(['--- ライブ別集計 ---']); rows.push(['日付','ライブ名','総売上','販売点数','会計回数']);
+  for(const e of db.events.slice().sort((a,b)=>a.date.localeCompare(b.date))) rows.push([fmtDateFull(e.date),e.name,totalRevenue(e.id),totalSold(e.id),salesFor(e.id).length]);
+  rows.push([]); rows.push(['--- 商品別集計（全期間） ---']); rows.push(['商品','販売点数','売上']);
+  for(const p of db.products) rows.push([p.name,soldByProduct(null,p.id),soldRevProduct(p.id)]);
+  rows.push([]); rows.push(['--- 全期間合計 ---']); rows.push(['総売上',totalRevenue(null)]); rows.push(['販売点数合計',totalSold(null)]);
   const csv='﻿'+rows.map(r=>r.map(c=>{const v=String(c??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',')).join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='mcp_sticker_'+stamp()+'.csv';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),2000);
-  toast('CSVを書き出しました','ok');
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='mcp_buppan_'+stamp()+'.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000); toast('CSVを書き出しました','ok');
 }
-function fmtTimeFull(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
-function stamp(){const d=new Date();const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;}
+function fmtTimeFull(ts){const d=new Date(ts);const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;}
+function stamp(){const d=new Date();const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;}
 
 // ---- util ----
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 let toastTimer=null;
 function toast(msg,kind){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+(kind||'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.className='';},1800);}
 function switchTab(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));window.scrollTo(0,0);}
+function fillMeta(){ document.getElementById('meta').textContent='商品 '+db.products.length+' ・ ライブ '+db.events.length+' ・ 会計 '+db.sales.length+'件 ・ ローカル保存（この端末内）'; }
 
 function renderAll(){
-  renderLiveBar(); renderStockbar(); renderGrid(); renderCart();
-  renderStats(); renderHist(); renderLiveAdmin(); fillPrices();
+  renderLiveBar(); renderProducts(); renderCart();
+  renderStats(); renderHist(); renderProdAdmin(); renderLiveAdmin(); fillMeta();
 }
 renderAll();
-
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
 </script>
 </body>
