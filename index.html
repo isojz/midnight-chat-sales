@@ -127,6 +127,31 @@
   .catbtn:active{transform:scale(.96)}
   .catbtn.active{border-color:var(--cyan);background:rgba(57,208,216,.14);color:var(--cyan)}
 
+  /* ---- チェックリスト（点検）---- */
+  .chksum{font-size:12px;font-weight:700;margin-bottom:10px;padding:8px 12px;border-radius:9px;text-align:center}
+  .chksum.ok{background:rgba(61,220,132,.14);color:var(--green)}
+  .chksum.warn{background:rgba(255,194,75,.14);color:var(--amber)}
+  .chkrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}
+  .chkrow:last-child{border-bottom:none}
+  .chkrow .mk{width:26px;height:26px;border-radius:50%;background:#222934;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
+  .chkrow .mk.done{background:rgba(61,220,132,.22);color:var(--green)}
+  .chkrow .lbl{flex:1;font-weight:600}
+  .chkrow .amt{color:var(--green);font-weight:700;font-size:13px}
+  .chkrow .amt.expense{color:var(--red)}
+  .chkrow .qadd{background:var(--cyan-d);color:#fff;border:none;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
+  .chkrow .qadd.expense{background:var(--red-d)}
+  .chkrow .qadd.sales{background:transparent;border:1px solid var(--line);color:var(--muted)}
+
+  /* ---- メンバー精算 ---- */
+  .settlerow{display:flex;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px;gap:10px}
+  .settlerow:last-child{border-bottom:none}
+  .settlerow .nm{flex:1;font-weight:700}
+  .settlerow .breakdown{font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
+  .settlerow .net{font-weight:700;font-size:15px;text-align:right}
+  .settlerow .net.plus{color:var(--green)}
+  .settlerow .net.minus{color:var(--red)}
+  .settlerow .net.zero{color:var(--muted)}
+
   /* ---- scope toggle ---- */
   .scopetoggle{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px;gap:4px}
   .scopetoggle button{flex:1;background:none;border:none;color:var(--muted);padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer}
@@ -265,6 +290,7 @@
     </div>
     <div class="scopelabel" id="bkScopeLabel"></div>
     <div class="balance" id="bkBalance"></div>
+    <div id="chkWrap"></div>
     <div class="subhead">明細</div>
     <div id="bookList"></div>
   </section>
@@ -280,6 +306,9 @@
     <!-- 収支サマリ -->
     <div class="balance" id="stBalance"></div>
     <div id="sbBreakdown"></div>
+
+    <!-- メンバー精算 -->
+    <div id="settleWrap"></div>
 
     <!-- 物販詳細 -->
     <div class="subhead">物販（グッズ売上の内訳）</div>
@@ -330,6 +359,16 @@
       <h3>ライブ管理 <button class="add" onclick="openLivePicker(true)">＋ 追加</button></h3>
       <div id="liveAdmin"></div>
       <div class="hint">会計・帳簿はどちらも「選択中（✓）のライブ」に紐付いて記録される。新規ライブの初期在庫は前ライブの残数を引き継ぐ（編集可）。</div>
+    </div>
+
+    <div class="section">
+      <h3>メンバー <button class="add" onclick="toggleNewMemberForm()">＋ 追加</button></h3>
+      <div class="newform" id="newMemForm" style="display:none">
+        <div class="field"><label>名前</label><input type="text" class="text" id="nmName" placeholder="例: Koki"></div>
+        <button class="btn save" onclick="addMember()">追加</button>
+      </div>
+      <div id="memAdmin"></div>
+      <div class="hint">「バンド共通」はデフォルトの受け皿（削除不可）。メンバーを追加すると、帳簿の「立て替えた人／受け取った人」を選べる。集計タブに精算サマリが出る。</div>
     </div>
 
     <div class="section">
@@ -385,6 +424,7 @@
     <div class="field"><label>日付</label><input type="date" id="lmDate"></div>
     <div class="field"><label>メモ</label><input type="text" class="text" id="lmMemo" placeholder="任意（例: 〇〇スタジオ）"></div>
     <div class="field wide"><label>ライブ</label><select id="lmEvent"></select></div>
+    <div class="field wide"><label id="lmMemberLabel">立て替えた人</label><select id="lmMember"></select></div>
     <button class="btn save" id="lmSaveBtn" onclick="saveLedger()">記録する</button>
   </div>
 </div>
@@ -392,7 +432,7 @@
 <div id="toast"></div>
 
 <script>
-const KEY='mcp_book_v4', V3='mcp_sticker_v3', V2='mcp_sticker_v2', V1='mcp_sticker_v1';
+const KEY='mcp_book_v5', V4='mcp_book_v4', V3='mcp_sticker_v3', V2='mcp_sticker_v2', V1='mcp_sticker_v1';
 const TYPES={normal:'通常',discount:'割引'};
 
 const DEFAULT_CATS=[
@@ -406,6 +446,19 @@ const DEFAULT_CATS=[
   {id:'cat_prod',      name:'制作費',         kind:'expense', system:true},
   {id:'cat_exp_other', name:'その他支出',     kind:'expense', system:true}
 ];
+const DEFAULT_MEMBERS=[
+  {id:'m_common', name:'バンド共通', system:true}
+];
+// ライブ点検の標準チェック項目
+const CHECK_ITEMS=[
+  {id:'chk_goods',     label:'グッズ物販',    kind:'income',  categoryId:'cat_goods',    sales:true},
+  {id:'chk_ticket',    label:'チケット売上',  kind:'income',  categoryId:'cat_ticket'},
+  {id:'chk_venue',     label:'会場費',        kind:'expense', categoryId:'cat_venue'},
+  {id:'chk_gear',      label:'機材/レンタル', kind:'expense', categoryId:'cat_gear'},
+  {id:'chk_transport', label:'交通費',        kind:'expense', categoryId:'cat_transport'},
+  {id:'chk_party',     label:'打ち上げ',      kind:'expense', categoryId:'cat_party'},
+  {id:'chk_prod',      label:'制作費',        kind:'expense', categoryId:'cat_prod'}
+];
 
 const defaults={
   products:[
@@ -413,7 +466,8 @@ const defaults={
     {id:'p_b',name:'ステッカーB',price:300,discount:200,trackStock:true}
   ],
   events:[], activeEventId:null, sales:[],
-  ledger:[], categories:structuredClone(DEFAULT_CATS)
+  ledger:[], categories:structuredClone(DEFAULT_CATS),
+  members:structuredClone(DEFAULT_MEMBERS)
 };
 
 let db=load();
@@ -427,6 +481,7 @@ function load(){
   try{
     const raw=localStorage.getItem(KEY);
     if(raw) return normalize(JSON.parse(raw));
+    const v4=localStorage.getItem(V4); if(v4){ const d=normalize(JSON.parse(v4)); localStorage.setItem(KEY,JSON.stringify(d)); return d; }
     const v3=localStorage.getItem(V3); if(v3){ const d=normalize(JSON.parse(v3)); localStorage.setItem(KEY,JSON.stringify(d)); return d; }
     const v2=localStorage.getItem(V2); if(v2) return migrate2(JSON.parse(v2));
     const v1=localStorage.getItem(V1); if(v1) return migrate1(JSON.parse(v1));
@@ -439,11 +494,17 @@ function normalize(d){
   d.sales=Array.isArray(d.sales)?d.sales:[];
   d.ledger=Array.isArray(d.ledger)?d.ledger:[];
   d.categories=Array.isArray(d.categories)?d.categories:[];
+  d.members=Array.isArray(d.members)?d.members:[];
   for(const dc of DEFAULT_CATS){
     const ex=d.categories.find(c=>c.id===dc.id);
     if(!ex) d.categories.push({...dc});
     else { ex.system=true; if(dc.autoFromSales) ex.autoFromSales=true; }
   }
+  for(const dm of DEFAULT_MEMBERS){
+    const ex=d.members.find(m=>m.id===dm.id);
+    if(!ex) d.members.push({...dm}); else ex.system=true;
+  }
+  for(const l of d.ledger){ if(!l.memberId) l.memberId='m_common'; }
   for(const e of d.events){ if(!e.stock||typeof e.stock!=='object') e.stock={}; }
   for(const p of d.products){ if(p.discount==='') p.discount=null; if(p.trackStock===undefined) p.trackStock=true; }
   if(d.activeEventId===undefined) d.activeEventId=null;
@@ -607,8 +668,39 @@ function renderBook(){
     <div class="bmain"><div class="l">収支（差引）</div><div class="v ${net>=0?'plus':'minus'}">${yenSign(net)}</div></div>
     <div class="brow income"><span>収入合計</span><b>${yen(inc)}</b></div>
     <div class="brow expense"><span>支出合計</span><b>${yen(exp)}</b></div>`;
+  // 点検チェックリスト（ライブ選択時のみ）
+  renderCheckList(useEvent?ev:null);
   // 明細（帳簿 + 物販売上を1行で表示）
   renderBookList(id, useEvent);
+}
+function renderCheckList(ev){
+  const el=document.getElementById('chkWrap');
+  if(!ev){ el.innerHTML=''; return; }
+  const rows=CHECK_ITEMS.map(it=>{
+    let amt=0, done=false;
+    if(it.sales){
+      amt=totalRevenue(ev.id);
+      done=amt>0 || totalSold(ev.id)>0;
+    }else{
+      amt=ledgerSum(ev.id,it.kind,it.categoryId);
+      done=amt>0;
+    }
+    return {...it, amt, done};
+  });
+  const undone=rows.filter(r=>!r.done).length;
+  const sum = undone===0
+    ? `<div class="chksum ok">✓ ${ev.name} — すべて記録済み</div>`
+    : `<div class="chksum warn">⚠ 未記録 ${undone}件 — 抜けがないか確認</div>`;
+  const items = rows.map(r=>{
+    const mark=`<span class="mk ${r.done?'done':''}">${r.done?'✓':'○'}</span>`;
+    const right = r.done
+      ? `<span class="amt ${r.kind==='expense'?'expense':''}">${(r.kind==='expense'?'−':'+')}${yen(r.amt)}</span>`
+      : (r.sales
+          ? `<button class="qadd sales" onclick="switchTab('sale')">物販タブへ</button>`
+          : `<button class="qadd ${r.kind==='expense'?'expense':''}" onclick="quickAddLedger('${r.kind}','${r.categoryId}')">＋記録</button>`);
+    return `<div class="chkrow">${mark}<span class="lbl">${esc(r.label)}</span>${right}</div>`;
+  }).join('');
+  el.innerHTML = `<div class="subhead">点検（このライブ）</div><div class="section" style="margin-bottom:14px">${sum}${items}</div>`;
 }
 function renderBookList(id, useEvent){
   const el=document.getElementById('bookList');
@@ -650,7 +742,7 @@ function renderBookList(id, useEvent){
 }
 
 // ---- 帳簿記帳モーダル ----
-function openLedgerForm(kind){
+function openLedgerForm(kind, presetCatId){
   lmKind=kind; lmCatId=null;
   document.getElementById('lmTitle').firstChild.nodeValue = (kind==='income'?'収入を記録':'支出を記録');
   document.getElementById('lmAmount').value='';
@@ -668,6 +760,12 @@ function openLedgerForm(kind){
     db.events.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>
       `<option value="${e.id}" ${e.id===db.activeEventId?'selected':''}>${esc(e.name)} (${fmtDateFull(e.date)})</option>`
     ).join('');
+  // メンバー選択
+  document.getElementById('lmMemberLabel').textContent = kind==='income'?'受け取った人':'立て替えた人';
+  const mSel=document.getElementById('lmMember');
+  mSel.innerHTML=db.members.map(m=>`<option value="${m.id}" ${m.id==='m_common'?'selected':''}>${esc(m.name)}</option>`).join('');
+  // プリセットカテゴリ（点検からの起動時）
+  if(presetCatId){ pickLedgerCat(presetCatId); }
   const btn=document.getElementById('lmSaveBtn');
   btn.className='btn save '+kind;
   btn.textContent=(kind==='income'?'収入を記録する':'支出を記録する');
@@ -685,10 +783,12 @@ function saveLedger(){
   const date=document.getElementById('lmDate').value||todayStr();
   const memo=(document.getElementById('lmMemo').value||'').trim();
   const eventId=document.getElementById('lmEvent').value||null;
-  db.ledger.push({id:mkId('l'),ts:Date.now(),date,eventId,kind:lmKind,categoryId:lmCatId,amount:amt,memo});
+  const memberId=document.getElementById('lmMember').value||'m_common';
+  db.ledger.push({id:mkId('l'),ts:Date.now(),date,eventId,kind:lmKind,categoryId:lmCatId,amount:amt,memo,memberId});
   save(); closeLedgerForm(); renderAll();
   toast((lmKind==='income'?'収入':'支出')+' '+yen(amt)+' を記録','ok');
 }
+function quickAddLedger(kind,catId){ openLedgerForm(kind,catId); }
 function deleteLedger(id){
   const l=db.ledger.find(x=>x.id===id); if(!l) return;
   const c=categoryById(l.categoryId);
@@ -724,6 +824,9 @@ function renderStats(){
   document.getElementById('sbBreakdown').innerHTML =
     (incRows?`<div class="subhead">収入内訳</div><div class="section" style="margin-bottom:12px">${incRows}</div>`:'')+
     (expRows?`<div class="subhead">支出内訳</div><div class="section" style="margin-bottom:12px">${expRows}</div>`:'');
+
+  // メンバー精算
+  renderSettlement(id);
 
   // 物販詳細
   document.getElementById('stRev').textContent=yen(totalRevenue(id));
@@ -763,6 +866,38 @@ function renderStats(){
   hv.textContent=yenSign(hdrNet);
   hv.className='v '+(hdrNet<0?'minus':'');
   document.getElementById('hdrLbl').textContent=ev?'このライブ収支':'収支';
+}
+
+// ---- メンバー精算 ----
+function memberBalance(memberId, eventId){
+  let expense=0, income=0;
+  for(const l of ledgerFor(eventId)){
+    if((l.memberId||'m_common')!==memberId) continue;
+    if(l.kind==='expense') expense+=l.amount||0;
+    else income+=l.amount||0;
+  }
+  return {expense, income, net: expense-income};
+}
+function renderSettlement(id){
+  const wrap=document.getElementById('settleWrap');
+  const targets=db.members.filter(m=>!m.system);
+  if(targets.length===0){ wrap.innerHTML=''; return; }
+  // 対象メンバーの立替/受取が全部0なら非表示
+  const rows=targets.map(m=>({name:m.name, ...memberBalance(m.id,id)}));
+  const totalActivity=rows.reduce((a,r)=>a+r.expense+r.income,0);
+  if(totalActivity===0){ wrap.innerHTML=''; return; }
+  wrap.innerHTML=`<div class="subhead">メンバー精算</div><div class="section" style="margin-bottom:14px">${
+    rows.map(r=>{
+      const cls = r.net>0?'plus':(r.net<0?'minus':'zero');
+      return `<div class="settlerow">
+        <div style="flex:1">
+          <div class="nm">${esc(r.name)}</div>
+          <div class="breakdown">立替 ${yen(r.expense)} / 受取 ${yen(r.income)}</div>
+        </div>
+        <div class="net ${cls}">${yenSign(r.net)}</div>
+      </div>`;
+    }).join('')
+  }</div><div class="hint" style="margin-top:-6px">正 = バンドから返してもらう額 / 負 = バンドに払う額</div>`;
 }
 
 // ---- 履歴（物販会計） ----
@@ -940,6 +1075,60 @@ function removeLive(id){
   save(); renderAll(); toast('削除しました','warn');
 }
 
+// ---- メンバー管理 ----
+function memberById(id){ return db.members.find(m=>m.id===id)||null; }
+function toggleNewMemberForm(){
+  const f=document.getElementById('newMemForm'); const show=f.style.display==='none';
+  if(show) document.getElementById('nmName').value='';
+  f.style.display=show?'block':'none';
+}
+function addMember(){
+  const name=(document.getElementById('nmName').value||'').trim();
+  if(!name){ toast('名前を入力してください','warn'); return; }
+  db.members.push({id:mkId('m'),name});
+  save(); document.getElementById('newMemForm').style.display='none'; renderAll(); toast('メンバーを追加しました','ok');
+}
+function renderMemAdmin(){
+  const el=document.getElementById('memAdmin');
+  el.innerHTML=db.members.map(m=>{
+    const used=db.ledger.filter(l=>(l.memberId||'m_common')===m.id).length;
+    const b=memberBalance(m.id,null);
+    const tag=m.system?'（削除不可）':'';
+    const canDel=!m.system && used===0;
+    const btns=[];
+    if(!m.system) btns.push(`<button onclick="editMember('${m.id}')">名前変更</button>`);
+    if(canDel) btns.push(`<button class="del" onclick="removeMember('${m.id}')">削除</button>`);
+    const summary = m.system
+      ? `使用 ${used}件`
+      : `使用 ${used}件・立替 ${yen(b.expense)} / 受取 ${yen(b.income)} = 差引 ${yenSign(b.net)}`;
+    return `<div class="arow" id="mr_${m.id}">
+      <div class="top"><div><div class="nm">${esc(m.name)}</div><div class="dt" style="color:var(--muted);font-size:11px">${tag}</div></div></div>
+      <div class="meta">${summary}</div>
+      ${btns.length?`<div class="btns">${btns.join('')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+function editMember(id){
+  const m=memberById(id); if(!m)return;
+  document.getElementById('mr_'+id).innerHTML=`
+    <div class="field"><label>名前</label><input type="text" class="text" id="em_name_${id}" value="${esc(m.name)}"></div>
+    <div class="btns"><button class="sel" onclick="saveMember('${id}')">保存</button><button onclick="renderMemAdmin()">取消</button></div>`;
+}
+function saveMember(id){
+  const m=memberById(id); if(!m)return;
+  const name=(document.getElementById('em_name_'+id).value||'').trim();
+  if(!name){ toast('名前を入力してください','warn'); return; }
+  m.name=name; save(); renderAll(); toast('保存しました','ok');
+}
+function removeMember(id){
+  const m=memberById(id); if(!m)return;
+  if(m.system){ toast('このメンバーは削除できません','warn'); return; }
+  const used=db.ledger.filter(l=>(l.memberId||'m_common')===id).length;
+  if(used>0){ toast('このメンバーは使用中です','warn'); return; }
+  if(!confirm(`「${m.name}」を削除しますか？`)) return;
+  db.members=db.members.filter(x=>x.id!==id); save(); renderAll(); toast('削除しました','warn');
+}
+
 // ---- カテゴリ管理 ----
 function toggleNewCategoryForm(){
   const f=document.getElementById('newCatForm'); const show=f.style.display==='none';
@@ -1014,11 +1203,12 @@ function exportCSV(){
     for(const it of s.items) rows.push([e?fmtDateFull(e.date):'',e?e.name:'(不明)',fmtTimeFull(s.ts),it.name,TYPES[it.type]||it.type,it.qty,it.unit,it.unit*it.qty,s.id]); }
 
   rows.push([]); rows.push(['--- 帳簿 明細 ---']);
-  rows.push(['日付','ライブ名','種別','カテゴリ','金額','メモ']);
+  rows.push(['日付','ライブ名','種別','カテゴリ','立替/受取者','金額','メモ']);
   for(const l of db.ledger.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''))){
     const e=l.eventId?eventById(l.eventId):null;
     const c=categoryById(l.categoryId);
-    rows.push([fmtDateFull(l.date||''), e?e.name:'', l.kind==='income'?'収入':'支出', c?c.name:'?', l.amount, l.memo||'']);
+    const m=memberById(l.memberId||'m_common');
+    rows.push([fmtDateFull(l.date||''), e?e.name:'', l.kind==='income'?'収入':'支出', c?c.name:'?', m?m.name:'', l.amount, l.memo||'']);
   }
 
   rows.push([]); rows.push(['--- ライブ別 収支 ---']);
@@ -1026,6 +1216,17 @@ function exportCSV(){
   for(const e of db.events.slice().sort((a,b)=>a.date.localeCompare(b.date))){
     rows.push([fmtDateFull(e.date),e.name,totalRevenue(e.id),ledgerSum(e.id,'income'),expenseTotal(e.id),netTotal(e.id)]);
   }
+
+  const settleTargets=db.members.filter(m=>!m.system);
+  if(settleTargets.length){
+    rows.push([]); rows.push(['--- メンバー別 精算（全期間） ---']);
+    rows.push(['名前','立替(支出)','受取(収入)','差引(バンドから返す額)']);
+    for(const m of settleTargets){
+      const b=memberBalance(m.id,null);
+      rows.push([m.name,b.expense,b.income,b.net]);
+    }
+  }
+
   rows.push([]); rows.push(['--- 商品別 集計（全期間） ---']);
   rows.push(['商品','販売点数','売上']);
   for(const p of db.products) rows.push([p.name,soldByProduct(null,p.id),soldRevProduct(p.id)]);
@@ -1049,12 +1250,12 @@ function stamp(){const d=new Date();const z=n=>String(n).padStart(2,'0');return 
 let toastTimer=null;
 function toast(msg,kind){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+(kind||'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.className='';},1800);}
 function switchTab(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));window.scrollTo(0,0);}
-function fillMeta(){ document.getElementById('meta').textContent='商品 '+db.products.length+' ・ ライブ '+db.events.length+' ・ 会計 '+db.sales.length+' ・ 帳簿 '+db.ledger.length+'件 ・ ローカル保存（この端末内）'; }
+function fillMeta(){ document.getElementById('meta').textContent='商品 '+db.products.length+' ・ ライブ '+db.events.length+' ・ 会計 '+db.sales.length+' ・ 帳簿 '+db.ledger.length+' ・ メンバー '+(db.members.filter(m=>!m.system).length)+'人 ・ ローカル保存（この端末内）'; }
 
 function renderAll(){
   renderLiveBar(); renderProducts(); renderCart();
   renderBook(); renderStats(); renderHist();
-  renderProdAdmin(); renderLiveAdmin(); renderCatAdmin();
+  renderProdAdmin(); renderLiveAdmin(); renderCatAdmin(); renderMemAdmin();
   fillMeta();
 }
 renderAll();
