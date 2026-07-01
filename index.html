@@ -447,7 +447,11 @@ const DEFAULT_CATS=[
   {id:'cat_exp_other', name:'その他支出',     kind:'expense', system:true}
 ];
 const DEFAULT_MEMBERS=[
-  {id:'m_common', name:'バンド共通', system:true}
+  {id:'m_common',   name:'バンド共通', system:true},
+  {id:'m_futamura', name:'二村'},
+  {id:'m_rio',      name:'りお'},
+  {id:'m_hoshi',    name:'ほし'},
+  {id:'m_be',       name:'べ'}
 ];
 // ライブ点検の標準チェック項目
 const CHECK_ITEMS=[
@@ -502,8 +506,12 @@ function normalize(d){
   }
   for(const dm of DEFAULT_MEMBERS){
     const ex=d.members.find(m=>m.id===dm.id);
-    if(!ex) d.members.push({...dm}); else ex.system=true;
+    if(!ex){
+      // systemは常に補完、非systemは初回のみシード
+      if(dm.system || !d.membersSeeded) d.members.push({...dm});
+    } else if(dm.system){ ex.system=true; }
   }
+  if(!d.membersSeeded) d.membersSeeded=true;
   for(const l of d.ledger){ if(!l.memberId) l.memberId='m_common'; }
   for(const e of d.events){ if(!e.stock||typeof e.stock!=='object') e.stock={}; }
   for(const p of d.products){ if(p.discount==='') p.discount=null; if(p.trackStock===undefined) p.trackStock=true; }
