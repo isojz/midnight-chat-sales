@@ -7,16 +7,16 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MCP販売">
+<meta name="apple-mobile-web-app-title" content="MCP収支">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-180.png">
-<title>MIDNIGHT CHAT PARTY 物販管理</title>
+<title>MIDNIGHT CHAT PARTY 収支管理</title>
 <style>
   :root{
     --bg:#0d0f12; --panel:#161a20; --panel2:#1d222a; --line:#2a313c;
     --text:#e7ecf2; --muted:#8b95a3; --cyan:#39d0d8; --cyan-d:#1f8e95;
-    --green:#3ddc84; --green-d:#1f8f54; --red:#ff5d6c; --amber:#ffc24b;
+    --green:#3ddc84; --green-d:#1f8f54; --red:#ff5d6c; --red-d:#a83341; --amber:#ffc24b;
     --shadow:0 6px 20px rgba(0,0,0,.45);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -38,6 +38,7 @@
   header .rev{margin-left:auto;text-align:right;line-height:1.1}
   header .rev .lbl{font-size:10px;color:var(--muted)}
   header .rev .v{font-size:18px;font-weight:700;color:var(--green)}
+  header .rev .v.minus{color:var(--red)}
   main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 90px}
   .view{display:none}
   .view.active{display:block}
@@ -89,6 +90,43 @@
   .btn.confirm{background:linear-gradient(180deg,var(--green),var(--green-d))}
   .btn.confirm:disabled{opacity:.4}
 
+  /* ---- 帳簿 ---- */
+  .bookactions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .bkbtn{border:none;border-radius:14px;padding:18px 10px;color:#fff;font-weight:700;font-size:15px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .05s}
+  .bkbtn:active{transform:scale(.97)}
+  .bkbtn .ic{font-size:24px;font-weight:400;line-height:1}
+  .bkbtn.income{background:linear-gradient(180deg,var(--green),var(--green-d))}
+  .bkbtn.expense{background:linear-gradient(180deg,var(--red),var(--red-d))}
+  .balance{background:linear-gradient(160deg,#16323a,#10181d);border:1px solid var(--cyan-d);border-radius:16px;padding:16px;margin-bottom:14px}
+  .balance .bmain{text-align:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
+  .balance .bmain .l{font-size:12px;color:var(--muted)}
+  .balance .bmain .v{font-size:34px;font-weight:800;margin-top:2px}
+  .balance .bmain .v.plus{color:var(--green)}
+  .balance .bmain .v.minus{color:var(--red)}
+  .balance .brow{display:flex;justify-content:space-between;padding:5px 4px;font-size:14px}
+  .balance .brow.income b{color:var(--green)}
+  .balance .brow.expense b{color:var(--red)}
+  .balance .brow b{font-weight:700}
+
+  .lgitem{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px;display:flex;align-items:center;gap:10px}
+  .lgitem .icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none;font-weight:700}
+  .lgitem .icon.income{background:rgba(61,220,132,.15);color:var(--green)}
+  .lgitem .icon.expense{background:rgba(255,93,108,.15);color:var(--red)}
+  .lgitem .icon.sales{background:rgba(57,208,216,.15);color:var(--cyan)}
+  .lgitem .info{flex:1;min-width:0}
+  .lgitem .info .cat{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lgitem .info .meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .lgitem .info .memo{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lgitem .amt{font-weight:700;font-size:15px;flex:none;text-align:right}
+  .lgitem .amt.income{color:var(--green)}
+  .lgitem .amt.expense{color:var(--red)}
+  .lgitem .del{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#222934;color:var(--red);font-size:13px;cursor:pointer;flex:none}
+
+  .catgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .catbtn{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:14px 6px;font-size:13px;color:var(--text);cursor:pointer;text-align:center;font-weight:600;line-height:1.2}
+  .catbtn:active{transform:scale(.96)}
+  .catbtn.active{border-color:var(--cyan);background:rgba(57,208,216,.14);color:var(--cyan)}
+
   /* ---- scope toggle ---- */
   .scopetoggle{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px;gap:4px}
   .scopetoggle button{flex:1;background:none;border:none;color:var(--muted);padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer}
@@ -115,6 +153,8 @@
   .livesum .dt{font-size:11px;color:var(--cyan)}
   .livesum .q{font-size:11px;color:var(--muted);margin-top:2px}
   .livesum .a{margin-left:auto;font-weight:700;font-size:16px;color:var(--green)}
+  .livesum .a.minus{color:var(--red)}
+  .livesum .a small{display:block;font-size:10px;color:var(--muted);font-weight:400;margin-top:2px;text-align:right}
 
   /* ---- 履歴 ---- */
   .hitem{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px;display:flex;align-items:center;gap:10px}
@@ -131,11 +171,15 @@
   .section h3 .add{margin-left:auto;font-size:13px;background:var(--cyan-d);color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer}
   .field{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .field label{flex:1;font-size:14px;color:var(--text)}
-  .field input{width:120px;background:#0e1116;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;font-size:16px;text-align:right;-webkit-user-select:text;user-select:text}
+  .field input, .field select{width:130px;background:#0e1116;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;font-size:15px;text-align:right;-webkit-user-select:text;user-select:text}
+  .field select{text-align:left;padding-right:10px}
   .field input.text{flex:1;width:auto;text-align:left}
   .field input[type=date]{text-align:left}
   .field input[type=checkbox]{width:22px;height:22px;flex:none}
+  .field.wide select{flex:1;width:auto}
   .btn.save{background:var(--cyan-d);width:100%;margin-top:4px}
+  .btn.save.income{background:var(--green-d)}
+  .btn.save.expense{background:var(--red-d)}
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);width:100%}
   .btn.danger{background:transparent;border:1px solid var(--red);color:var(--red);width:100%}
   .hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
@@ -152,16 +196,16 @@
   .arow .btns .sel{background:var(--cyan-d);color:#fff;border:none}
   .arow .btns .del{color:var(--red)}
 
-  /* ---- nav ---- */
+  /* ---- nav（5タブ）---- */
   nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:#10141a;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-  nav button{flex:1;background:none;border:none;color:var(--muted);padding:10px 0 8px;font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
-  nav button .ic{font-size:19px;line-height:1}
+  nav button{flex:1;background:none;border:none;color:var(--muted);padding:9px 0 7px;font-size:10.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+  nav button .ic{font-size:18px;line-height:1}
   nav button.active{color:var(--cyan)}
 
   /* ---- modal ---- */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:60}
   .modal.show{display:flex}
-  .sheet{background:var(--bg);border-top-left-radius:18px;border-top-right-radius:18px;border-top:1px solid var(--line);width:100%;max-height:85vh;overflow-y:auto;padding:16px 16px calc(env(safe-area-inset-bottom) + 20px)}
+  .sheet{background:var(--bg);border-top-left-radius:18px;border-top-right-radius:18px;border-top:1px solid var(--line);width:100%;max-height:88vh;overflow-y:auto;padding:16px 16px calc(env(safe-area-inset-bottom) + 20px)}
   .sheet-h{display:flex;align-items:center;font-size:16px;font-weight:700;margin-bottom:14px}
   .sheet-h .cls{margin-left:auto;width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#222934;color:var(--text);font-size:16px;cursor:pointer}
   .pickrow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:9px;cursor:pointer}
@@ -180,11 +224,11 @@
 <body>
 <header>
   <div class="logo">&gt;_ <b>Midnight Chat Party</b></div>
-  <div class="rev"><div class="lbl" id="hdrLbl">このライブ売上</div><div class="v" id="hdrRev">¥0</div></div>
+  <div class="rev"><div class="lbl" id="hdrLbl">このライブ収支</div><div class="v" id="hdrRev">¥0</div></div>
 </header>
 
 <main>
-  <!-- ===== 会計 ===== -->
+  <!-- ===== 会計（物販） ===== -->
   <section class="view active" id="view-sale">
     <div class="livebar" id="liveBar" onclick="openLivePicker()">
       <span class="cal">📅</span>
@@ -200,6 +244,31 @@
     </div>
   </section>
 
+  <!-- ===== 帳簿（収支入力・履歴） ===== -->
+  <section class="view" id="view-book">
+    <div class="livebar" id="liveBarBook" onclick="openLivePicker()">
+      <span class="cal">📅</span>
+      <div class="info" id="liveBarBookInfo"></div>
+      <span class="chev">切替 ▼</span>
+    </div>
+    <div class="bookactions">
+      <button class="bkbtn income" onclick="openLedgerForm('income')">
+        <span class="ic">＋</span><span class="lb">収入を記録</span>
+      </button>
+      <button class="bkbtn expense" onclick="openLedgerForm('expense')">
+        <span class="ic">＋</span><span class="lb">支出を記録</span>
+      </button>
+    </div>
+    <div class="scopetoggle">
+      <button id="bkEvent" class="active" onclick="setBookScope('event')">このライブ</button>
+      <button id="bkAll" onclick="setBookScope('all')">全期間</button>
+    </div>
+    <div class="scopelabel" id="bkScopeLabel"></div>
+    <div class="balance" id="bkBalance"></div>
+    <div class="subhead">明細</div>
+    <div id="bookList"></div>
+  </section>
+
   <!-- ===== 集計 ===== -->
   <section class="view" id="view-stats">
     <div class="scopetoggle">
@@ -207,14 +276,21 @@
       <button id="scAll" onclick="setStatScope('all')">全期間</button>
     </div>
     <div class="scopelabel" id="scopeLabel"></div>
-    <div class="bigstat"><div class="l">総売上（現金）</div><div class="v" id="stRev">¥0</div></div>
+
+    <!-- 収支サマリ -->
+    <div class="balance" id="stBalance"></div>
+    <div id="sbBreakdown"></div>
+
+    <!-- 物販詳細 -->
+    <div class="subhead">物販（グッズ売上の内訳）</div>
+    <div class="bigstat"><div class="l">物販売上</div><div class="v" id="stRev">¥0</div></div>
     <div class="cards">
       <div class="card"><div class="l">販売点数</div><div class="v" id="stQty">0</div><div class="sub">合計</div></div>
       <div class="card"><div class="l">会計回数</div><div class="v" id="stTx">0</div><div class="sub">取引</div></div>
     </div>
     <div class="subhead">商品別</div>
     <div class="section" style="margin-bottom:14px"><div id="stProdRows"></div></div>
-    <div class="subhead" id="stMixHead">価格区分</div>
+    <div class="subhead">価格区分</div>
     <div class="section" style="margin-bottom:14px">
       <div class="rowstat"><span>通常価格</span><b id="stN">0 点</b></div>
       <div class="rowstat"><span>割引</span><b id="stD">0 点</b></div>
@@ -225,12 +301,13 @@
     <button class="btn save" style="margin-top:8px" onclick="exportCSV()">CSVをエクスポート</button>
   </section>
 
-  <!-- ===== 履歴 ===== -->
+  <!-- ===== 履歴（物販会計） ===== -->
   <section class="view" id="view-hist">
     <div class="scopetoggle">
       <button id="hsEvent" class="active" onclick="setHistScope('event')">このライブ</button>
       <button id="hsAll" onclick="setHistScope('all')">全ライブ</button>
     </div>
+    <div class="hint" style="margin:0 0 10px">物販の会計履歴。帳簿の明細は「帳簿」タブで確認。</div>
     <div id="histList"></div>
   </section>
 
@@ -248,11 +325,26 @@
       <div id="prodAdmin"></div>
       <div class="hint">割引価格を入れた商品は「通常／割引」の2ボタンに、空欄なら1ボタンになる。在庫管理OFFの商品は枚数を数えない（CD等の委託向け）。</div>
     </div>
+
     <div class="section">
       <h3>ライブ管理 <button class="add" onclick="openLivePicker(true)">＋ 追加</button></h3>
       <div id="liveAdmin"></div>
-      <div class="hint">会計は「選択中（✓）のライブ」に記録される。新規ライブの初期在庫は前ライブの残数を引き継いだ値が初期表示される（編集可）。</div>
+      <div class="hint">会計・帳簿はどちらも「選択中（✓）のライブ」に紐付いて記録される。新規ライブの初期在庫は前ライブの残数を引き継ぐ（編集可）。</div>
     </div>
+
+    <div class="section">
+      <h3>収支カテゴリ <button class="add" onclick="toggleNewCategoryForm()">＋ 追加</button></h3>
+      <div class="newform" id="newCatForm" style="display:none">
+        <div class="field"><label>種別</label>
+          <select id="ncKind"><option value="income">収入</option><option value="expense">支出</option></select>
+        </div>
+        <div class="field"><label>カテゴリ名</label><input type="text" class="text" id="ncName" placeholder="例: スタジオ代"></div>
+        <button class="btn save" onclick="addCategory()">追加</button>
+      </div>
+      <div id="catAdmin"></div>
+      <div class="hint">「グッズ物販」は物販タブの売上を自動集計するカテゴリ（削除・名前変更不可）。標準カテゴリは削除不可・名前変更のみ可能。</div>
+    </div>
+
     <button class="btn ghost" onclick="exportCSV()">CSVバックアップ</button>
     <div style="height:10px"></div>
     <button class="btn danger" onclick="resetAll()">全データをリセット</button>
@@ -262,6 +354,7 @@
 
 <nav>
   <button class="active" data-v="sale" onclick="switchTab('sale')"><span class="ic">🧾</span>会計</button>
+  <button data-v="book" onclick="switchTab('book')"><span class="ic">📒</span>帳簿</button>
   <button data-v="stats" onclick="switchTab('stats')"><span class="ic">📊</span>集計</button>
   <button data-v="hist" onclick="switchTab('hist')"><span class="ic">🕒</span>履歴</button>
   <button data-v="set" onclick="switchTab('set')"><span class="ic">⚙️</span>設定</button>
@@ -282,38 +375,75 @@
   </div>
 </div>
 
+<!-- 帳簿記帳モーダル -->
+<div class="modal" id="ledgerModal">
+  <div class="sheet">
+    <div class="sheet-h" id="lmTitle">記録<button class="cls" onclick="closeLedgerForm()">✕</button></div>
+    <div class="hint" style="margin:-6px 0 8px">カテゴリを選び、金額を入力してください。</div>
+    <div class="catgrid" id="lmCats"></div>
+    <div class="field"><label>金額（円）</label><input type="number" inputmode="numeric" id="lmAmount" min="0" placeholder="0"></div>
+    <div class="field"><label>日付</label><input type="date" id="lmDate"></div>
+    <div class="field"><label>メモ</label><input type="text" class="text" id="lmMemo" placeholder="任意（例: 〇〇スタジオ）"></div>
+    <div class="field wide"><label>ライブ</label><select id="lmEvent"></select></div>
+    <button class="btn save" id="lmSaveBtn" onclick="saveLedger()">記録する</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-const KEY='mcp_sticker_v3', V2='mcp_sticker_v2', V1='mcp_sticker_v1';
+const KEY='mcp_book_v4', V3='mcp_sticker_v3', V2='mcp_sticker_v2', V1='mcp_sticker_v1';
 const TYPES={normal:'通常',discount:'割引'};
+
+const DEFAULT_CATS=[
+  {id:'cat_ticket',    name:'チケット',       kind:'income',  system:true},
+  {id:'cat_goods',     name:'グッズ物販',     kind:'income',  system:true, autoFromSales:true},
+  {id:'cat_inc_other', name:'その他収入',     kind:'income',  system:true},
+  {id:'cat_venue',     name:'会場費',         kind:'expense', system:true},
+  {id:'cat_gear',      name:'機材/レンタル',  kind:'expense', system:true},
+  {id:'cat_transport', name:'交通費',         kind:'expense', system:true},
+  {id:'cat_party',     name:'打ち上げ',       kind:'expense', system:true},
+  {id:'cat_prod',      name:'制作費',         kind:'expense', system:true},
+  {id:'cat_exp_other', name:'その他支出',     kind:'expense', system:true}
+];
 
 const defaults={
   products:[
     {id:'p_a',name:'ステッカーA',price:300,discount:200,trackStock:true},
     {id:'p_b',name:'ステッカーB',price:300,discount:200,trackStock:true}
   ],
-  events:[], activeEventId:null, sales:[]
+  events:[], activeEventId:null, sales:[],
+  ledger:[], categories:structuredClone(DEFAULT_CATS)
 };
 
 let db=load();
-let cart={};               // key `${productId}_${type}` -> qty
-let statScope='event', histScope='event';
+let cart={};
+let statScope='event', histScope='event', bookScope='event';
+let lmKind='income', lmCatId=null;
 
 function mkId(p){ return p+'_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); }
+
 function load(){
   try{
     const raw=localStorage.getItem(KEY);
     if(raw) return normalize(JSON.parse(raw));
+    const v3=localStorage.getItem(V3); if(v3){ const d=normalize(JSON.parse(v3)); localStorage.setItem(KEY,JSON.stringify(d)); return d; }
     const v2=localStorage.getItem(V2); if(v2) return migrate2(JSON.parse(v2));
     const v1=localStorage.getItem(V1); if(v1) return migrate1(JSON.parse(v1));
   }catch(e){}
-  return structuredClone(defaults);
+  return normalize(structuredClone(defaults));
 }
 function normalize(d){
   d.products=Array.isArray(d.products)?d.products:[];
   d.events=Array.isArray(d.events)?d.events:[];
   d.sales=Array.isArray(d.sales)?d.sales:[];
+  d.ledger=Array.isArray(d.ledger)?d.ledger:[];
+  d.categories=Array.isArray(d.categories)?d.categories:[];
+  for(const dc of DEFAULT_CATS){
+    const ex=d.categories.find(c=>c.id===dc.id);
+    if(!ex) d.categories.push({...dc});
+    else { ex.system=true; if(dc.autoFromSales) ex.autoFromSales=true; }
+  }
   for(const e of d.events){ if(!e.stock||typeof e.stock!=='object') e.stock={}; }
   for(const p of d.products){ if(p.discount==='') p.discount=null; if(p.trackStock===undefined) p.trackStock=true; }
   if(d.activeEventId===undefined) d.activeEventId=null;
@@ -325,7 +455,7 @@ function baseProductsFrom(prices){
     {id:'p_b',name:'ステッカーB',price:prices.n,discount:prices.d,trackStock:true}
   ];
 }
-function mapItem(it){ // 旧 design A/B -> productId
+function mapItem(it){
   const pid=it.design==='B'?'p_b':'p_a';
   const name=it.design==='B'?'ステッカーB':'ステッカーA';
   return {productId:pid,name,type:it.type,qty:it.qty,unit:it.unit};
@@ -335,7 +465,7 @@ function migrate2(v){
   const products=baseProductsFrom({n:s.priceNormal||300,d:s.priceDiscount||200});
   const events=(v.events||[]).map(e=>({id:e.id,date:e.date,name:e.name,stock:{p_a:e.stockA||0,p_b:e.stockB||0}}));
   const sales=(v.sales||[]).map(s2=>({id:s2.id,eventId:s2.eventId,ts:s2.ts,items:(s2.items||[]).map(mapItem),total:s2.total}));
-  const d={products,events,activeEventId:v.activeEventId||null,sales};
+  const d=normalize({products,events,activeEventId:v.activeEventId||null,sales});
   localStorage.setItem(KEY,JSON.stringify(d)); return d;
 }
 function migrate1(v){
@@ -344,12 +474,13 @@ function migrate1(v){
   const id=mkId('e');
   const ev={id,date:todayStr(),name:(s.eventName||'ライブ1'),stock:{p_a:s.stockA||0,p_b:s.stockB||0}};
   const sales=(v.sales||[]).map(s2=>({id:s2.id,eventId:id,ts:s2.ts,items:(s2.items||[]).map(mapItem),total:s2.total}));
-  const d={products,events:[ev],activeEventId:id,sales};
+  const d=normalize({products,events:[ev],activeEventId:id,sales});
   localStorage.setItem(KEY,JSON.stringify(d)); return d;
 }
 function save(){ localStorage.setItem(KEY,JSON.stringify(db)); }
 
 function yen(n){ return '¥'+Number(n||0).toLocaleString('ja-JP'); }
+function yenSign(n){ const s=n>=0?'+':'−'; return s+'¥'+Math.abs(Number(n||0)).toLocaleString('ja-JP'); }
 function hasDiscount(p){ return p.discount!=null && p.discount!==''; }
 function unitPrice(p,type){ return type==='discount'&&hasDiscount(p)?p.discount:p.price; }
 function todayStr(){ const d=new Date();const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
@@ -360,8 +491,9 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;',
 function activeEvent(){ return db.events.find(e=>e.id===db.activeEventId)||null; }
 function eventById(id){ return db.events.find(e=>e.id===id)||null; }
 function productById(id){ return db.products.find(p=>p.id===id)||null; }
+function categoryById(id){ return db.categories.find(c=>c.id===id)||null; }
 
-// ---- 集計ヘルパ（eventId=null で全期間）----
+// ---- 集計（物販）----
 function salesFor(eventId){ return eventId? db.sales.filter(s=>s.eventId===eventId) : db.sales; }
 function soldByProduct(eventId,pid){let n=0;for(const s of salesFor(eventId))for(const it of s.items)if(it.productId===pid)n+=it.qty;return n;}
 function soldByType(eventId,t){let n=0;for(const s of salesFor(eventId))for(const it of s.items)if(it.type===t)n+=it.qty;return n;}
@@ -371,13 +503,29 @@ function initStock(eventId,pid){const e=eventById(eventId);return e&&e.stock&&e.
 function remaining(eventId,pid){return initStock(eventId,pid)-soldByProduct(eventId,pid);}
 function cartQtyForProduct(pid){let n=0;for(const k in cart){if(k.indexOf(pid+'_')===0)n+=cart[k];}return n;}
 
+// ---- 集計（帳簿）----
+function ledgerFor(eventId){ return eventId? db.ledger.filter(l=>l.eventId===eventId) : db.ledger; }
+function ledgerSum(eventId,kind,categoryId){
+  let n=0;
+  for(const l of ledgerFor(eventId)){
+    if(l.kind!==kind) continue;
+    if(categoryId && l.categoryId!==categoryId) continue;
+    n+=l.amount||0;
+  }
+  return n;
+}
+function incomeTotal(eventId){ return totalRevenue(eventId) + ledgerSum(eventId,'income'); }
+function expenseTotal(eventId){ return ledgerSum(eventId,'expense'); }
+function netTotal(eventId){ return incomeTotal(eventId) - expenseTotal(eventId); }
+function selectableCategories(kind){ return db.categories.filter(c=>c.kind===kind && !c.autoFromSales); }
+
 // ---- 会計画面 ----
 function renderLiveBar(){
   const ev=activeEvent();
-  const el=document.getElementById('liveBarInfo');
-  el.innerHTML = ev
+  const html = ev
     ? `<div class="nm">${esc(ev.name)}</div><div class="dt">${fmtDateFull(ev.date)}</div>`
     : '<div class="nm none">ライブ未選択</div><div class="dt">タップして登録</div>';
+  for(const id of ['liveBarInfo','liveBarBookInfo']){ const el=document.getElementById(id); if(el) el.innerHTML=html; }
 }
 function renderProducts(){
   const ev=activeEvent();
@@ -446,17 +594,141 @@ function confirmSale(){
   save(); cart={}; renderAll(); toast('記録しました '+yen(total),'ok');
 }
 
+// ---- 帳簿タブ ----
+function setBookScope(s){ bookScope=s; document.getElementById('bkEvent').classList.toggle('active',s==='event'); document.getElementById('bkAll').classList.toggle('active',s==='all'); renderBook(); }
+function renderBook(){
+  const ev=activeEvent();
+  const useEvent=(bookScope==='event' && ev);
+  const id=useEvent?ev.id:null;
+  document.getElementById('bkScopeLabel').textContent=useEvent?`${esc(ev.name)}（${fmtDateFull(ev.date)}）`:(bookScope==='event'?'ライブ未選択':'全期間');
+  // 収支サマリ
+  const inc=incomeTotal(id), exp=expenseTotal(id), net=inc-exp;
+  document.getElementById('bkBalance').innerHTML=`
+    <div class="bmain"><div class="l">収支（差引）</div><div class="v ${net>=0?'plus':'minus'}">${yenSign(net)}</div></div>
+    <div class="brow income"><span>収入合計</span><b>${yen(inc)}</b></div>
+    <div class="brow expense"><span>支出合計</span><b>${yen(exp)}</b></div>`;
+  // 明細（帳簿 + 物販売上を1行で表示）
+  renderBookList(id, useEvent);
+}
+function renderBookList(id, useEvent){
+  const el=document.getElementById('bookList');
+  const items=[];
+  // 物販売上（このスコープ・ライブごとに1行）
+  const salesEvents = useEvent ? (id?[id]:[]) : db.events.map(e=>e.id);
+  for(const eid of salesEvents){
+    const rev=totalRevenue(eid); const q=totalSold(eid);
+    if(rev<=0 && q<=0) continue;
+    const e=eventById(eid);
+    items.push({sort:e?e.date+' zzz':'', kind:'income', amt:rev, cat:'グッズ物販', memo:`${q}点 / ${salesFor(eid).length}会計`, eventId:eid, sales:true, id:'sales_'+eid, date:e?e.date:''});
+  }
+  // 手動記帳
+  for(const l of (id? db.ledger.filter(x=>x.eventId===id): db.ledger)){
+    const c=categoryById(l.categoryId);
+    items.push({sort:(l.date||'')+' '+l.ts, kind:l.kind, amt:l.amount||0, cat:c?c.name:'?', memo:l.memo||'', eventId:l.eventId, sales:false, id:l.id, date:l.date, ts:l.ts});
+  }
+  items.sort((a,b)=>b.sort.localeCompare(a.sort));
+  if(items.length===0){ el.innerHTML='<div class="emptybox">'+(bookScope==='event'&&!useEvent?'ライブを選択してください':'まだ記録がありません')+'</div>'; return; }
+  el.innerHTML=items.map(x=>{
+    const iconCls = x.sales?'sales':x.kind;
+    const iconCh = x.sales?'🛍':(x.kind==='income'?'＋':'−');
+    const amtSign = x.kind==='income'?'+':'−';
+    const ev=x.eventId?eventById(x.eventId):null;
+    const lvTag = (!useEvent && ev)?`${esc(ev.name)}・`:'';
+    const dt = x.date ? fmtDateFull(x.date) : '';
+    const delBtn = x.sales?'':`<button class="del" onclick="deleteLedger('${x.id}')">✕</button>`;
+    return `<div class="lgitem">
+      <div class="icon ${iconCls}">${iconCh}</div>
+      <div class="info">
+        <div class="cat">${esc(x.cat)}</div>
+        <div class="meta">${lvTag}${dt}</div>
+        ${x.memo?`<div class="memo">${esc(x.memo)}</div>`:''}
+      </div>
+      <div class="amt ${x.kind}">${amtSign}${yen(x.amt)}</div>
+      ${delBtn}
+    </div>`;
+  }).join('');
+}
+
+// ---- 帳簿記帳モーダル ----
+function openLedgerForm(kind){
+  lmKind=kind; lmCatId=null;
+  document.getElementById('lmTitle').firstChild.nodeValue = (kind==='income'?'収入を記録':'支出を記録');
+  document.getElementById('lmAmount').value='';
+  document.getElementById('lmMemo').value='';
+  const ev=activeEvent();
+  document.getElementById('lmDate').value = ev? ev.date : todayStr();
+  // カテゴリボタン
+  const cats=selectableCategories(kind);
+  document.getElementById('lmCats').innerHTML=cats.map(c=>
+    `<button class="catbtn" data-cid="${c.id}" onclick="pickLedgerCat('${c.id}')">${esc(c.name)}</button>`
+  ).join('');
+  // ライブ選択
+  const sel=document.getElementById('lmEvent');
+  sel.innerHTML='<option value="">（紐付けなし・共通経費）</option>'+
+    db.events.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>
+      `<option value="${e.id}" ${e.id===db.activeEventId?'selected':''}>${esc(e.name)} (${fmtDateFull(e.date)})</option>`
+    ).join('');
+  const btn=document.getElementById('lmSaveBtn');
+  btn.className='btn save '+kind;
+  btn.textContent=(kind==='income'?'収入を記録する':'支出を記録する');
+  document.getElementById('ledgerModal').classList.add('show');
+}
+function closeLedgerForm(){ document.getElementById('ledgerModal').classList.remove('show'); }
+function pickLedgerCat(id){
+  lmCatId=id;
+  document.querySelectorAll('#lmCats .catbtn').forEach(b=>b.classList.toggle('active',b.dataset.cid===id));
+}
+function saveLedger(){
+  if(!lmCatId){ toast('カテゴリを選択してください','warn'); return; }
+  const amt=parseInt(document.getElementById('lmAmount').value,10);
+  if(isNaN(amt)||amt<=0){ toast('金額を入力してください','warn'); return; }
+  const date=document.getElementById('lmDate').value||todayStr();
+  const memo=(document.getElementById('lmMemo').value||'').trim();
+  const eventId=document.getElementById('lmEvent').value||null;
+  db.ledger.push({id:mkId('l'),ts:Date.now(),date,eventId,kind:lmKind,categoryId:lmCatId,amount:amt,memo});
+  save(); closeLedgerForm(); renderAll();
+  toast((lmKind==='income'?'収入':'支出')+' '+yen(amt)+' を記録','ok');
+}
+function deleteLedger(id){
+  const l=db.ledger.find(x=>x.id===id); if(!l) return;
+  const c=categoryById(l.categoryId);
+  if(!confirm(`この記録を削除しますか？\n${l.kind==='income'?'収入':'支出'} ${yen(l.amount)}${c?'・'+c.name:''}`)) return;
+  db.ledger=db.ledger.filter(x=>x.id!==id); save(); renderAll(); toast('削除しました','warn');
+}
+
 // ---- 集計 ----
 function setStatScope(s){ statScope=s; document.getElementById('scEvent').classList.toggle('active',s==='event'); document.getElementById('scAll').classList.toggle('active',s==='all'); renderStats(); }
 function renderStats(){
   const ev=activeEvent();
   const useEvent=(statScope==='event' && ev);
   const id=useEvent?ev.id:null;
-  document.getElementById('scopeLabel').textContent=useEvent?`${esc(ev.name)}（${fmtDateFull(ev.date)}）`:(statScope==='event'?'ライブ未選択':'全ライブ合計');
+  document.getElementById('scopeLabel').textContent=useEvent?`${esc(ev.name)}（${fmtDateFull(ev.date)}）`:(statScope==='event'?'ライブ未選択':'全期間合計');
+
+  // 収支サマリ
+  const inc=incomeTotal(id), exp=expenseTotal(id), net=inc-exp;
+  document.getElementById('stBalance').innerHTML=`
+    <div class="bmain"><div class="l">収支（差引）</div><div class="v ${net>=0?'plus':'minus'}">${yenSign(net)}</div></div>
+    <div class="brow income"><span>収入合計</span><b>${yen(inc)}</b></div>
+    <div class="brow expense"><span>支出合計</span><b>${yen(exp)}</b></div>`;
+  // カテゴリ内訳
+  const incRows = db.categories.filter(c=>c.kind==='income').map(c=>{
+    const amt = c.autoFromSales ? totalRevenue(id) : ledgerSum(id,'income',c.id);
+    if(amt<=0) return '';
+    return `<div class="rowstat"><span>${esc(c.name)}</span><b>${yen(amt)}</b></div>`;
+  }).filter(Boolean).join('');
+  const expRows = db.categories.filter(c=>c.kind==='expense').map(c=>{
+    const amt = ledgerSum(id,'expense',c.id);
+    if(amt<=0) return '';
+    return `<div class="rowstat"><span>${esc(c.name)}</span><b>${yen(amt)}</b></div>`;
+  }).filter(Boolean).join('');
+  document.getElementById('sbBreakdown').innerHTML =
+    (incRows?`<div class="subhead">収入内訳</div><div class="section" style="margin-bottom:12px">${incRows}</div>`:'')+
+    (expRows?`<div class="subhead">支出内訳</div><div class="section" style="margin-bottom:12px">${expRows}</div>`:'');
+
+  // 物販詳細
   document.getElementById('stRev').textContent=yen(totalRevenue(id));
   document.getElementById('stQty').textContent=totalSold(id);
   document.getElementById('stTx').textContent=salesFor(id).length;
-  // 商品別
   document.getElementById('stProdRows').innerHTML = db.products.length
     ? db.products.map(p=>{
         const q=soldByProduct(id,p.id);
@@ -464,29 +736,36 @@ function renderStats(){
         return `<div class="rowstat"><span>${esc(p.name)}</span><b>${q} 点<span class="mut">${yen(rev)}</span></b></div>`;
       }).join('')
     : '<div class="hint" style="margin:0">商品が未登録</div>';
-  // 価格区分
   const ts=totalSold(id);
   document.getElementById('stN').textContent=soldByType(id,'normal')+' 点';
   document.getElementById('stD').textContent=soldByType(id,'discount')+' 点';
   document.getElementById('stDr').textContent=(ts?Math.round(soldByType(id,'discount')/ts*100):0)+'%';
-  // 在庫（このライブ時のみ）
   const sw=document.getElementById('stStockWrap');
   const tracked=db.products.filter(p=>p.trackStock);
   if(useEvent && tracked.length){
     sw.innerHTML='<div class="subhead">在庫（このライブ）</div><div class="section" style="margin-bottom:14px">'+
       tracked.map(p=>`<div class="rowstat"><span>${esc(p.name)}</span><b>${remaining(ev.id,p.id)}<span class="mut">初期 ${initStock(ev.id,p.id)}</span></b></div>`).join('')+'</div>';
   }else sw.innerHTML='';
-  // ライブ別（全期間時）
   const ll=document.getElementById('stLiveList');
   if(!useEvent && db.events.length){
-    ll.innerHTML='<div class="subhead">ライブ別</div>'+db.events.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`
-      <div class="livesum"><div><div class="nm">${esc(e.name)}</div><div class="dt">${fmtDateFull(e.date)}</div><div class="q">${totalSold(e.id)}点・${salesFor(e.id).length}会計</div></div><div class="a">${yen(totalRevenue(e.id))}</div></div>`).join('');
+    ll.innerHTML='<div class="subhead">ライブ別 収支</div>'+db.events.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>{
+      const n=netTotal(e.id);
+      return `<div class="livesum">
+        <div><div class="nm">${esc(e.name)}</div><div class="dt">${fmtDateFull(e.date)}</div><div class="q">物販 ${yen(totalRevenue(e.id))} / 収入 ${yen(incomeTotal(e.id))} / 支出 ${yen(expenseTotal(e.id))}</div></div>
+        <div class="a ${n<0?'minus':''}">${yenSign(n)}<small>差引</small></div>
+      </div>`;
+    }).join('');
   }else ll.innerHTML='';
-  document.getElementById('hdrRev').textContent=yen(totalRevenue(ev?ev.id:null));
-  document.getElementById('hdrLbl').textContent=ev?'このライブ売上':'売上';
+
+  // ヘッダ表示：収支
+  const hdrNet=netTotal(ev?ev.id:null);
+  const hv=document.getElementById('hdrRev');
+  hv.textContent=yenSign(hdrNet);
+  hv.className='v '+(hdrNet<0?'minus':'');
+  document.getElementById('hdrLbl').textContent=ev?'このライブ収支':'収支';
 }
 
-// ---- 履歴 ----
+// ---- 履歴（物販会計） ----
 function fmtTime(ts){const d=new Date(ts);const z=n=>String(n).padStart(2,'0');return `${z(d.getMonth()+1)}/${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;}
 function setHistScope(s){ histScope=s; document.getElementById('hsEvent').classList.toggle('active',s==='event'); document.getElementById('hsAll').classList.toggle('active',s==='all'); renderHist(); }
 function renderHist(){
@@ -494,7 +773,7 @@ function renderHist(){
   const useEvent=(histScope==='event' && ev);
   const list=(useEvent? db.sales.filter(s=>s.eventId===ev.id):db.sales).slice().reverse();
   const el=document.getElementById('histList');
-  if(list.length===0){ el.innerHTML='<div class="emptybox">'+(histScope==='event'&&!ev?'ライブを選択してください':'まだ記録がありません')+'</div>'; return; }
+  if(list.length===0){ el.innerHTML='<div class="emptybox">'+(histScope==='event'&&!ev?'ライブを選択してください':'まだ物販の記録がありません')+'</div>'; return; }
   el.innerHTML=list.map(s=>{
     const desc=s.items.map(it=>`${esc(it.name)}${it.type==='discount'?'(割)':''}×${it.qty}`).join(' / ');
     const e=eventById(s.eventId);
@@ -563,7 +842,7 @@ function removeProduct(id){
   save(); renderAll(); toast('削除しました','warn');
 }
 
-// ---- 在庫入力フィールド（ライブ用） ----
+// ---- 在庫入力フィールド ----
 function stockFieldsHTML(prefix,stockMap){
   const tracked=db.products.filter(p=>p.trackStock);
   if(tracked.length===0) return '<div class="hint">在庫管理ONの商品がありません</div>';
@@ -624,7 +903,7 @@ function renderLiveAdmin(){
     const stk=db.products.filter(p=>p.trackStock).map(p=>`${p.name.slice(0,4)} ${remaining(e.id,p.id)}`).join(' / ')||'—';
     return `<div class="arow ${act?'active':''}" id="lr_${e.id}">
       <div class="top"><div><div class="nm">${esc(e.name)}</div><div class="dt">${fmtDateFull(e.date)}</div></div>${act?'<div class="badge">選択中</div>':''}</div>
-      <div class="meta">売上 ${yen(totalRevenue(e.id))} ・ ${totalSold(e.id)}点 ・ 残 ${esc(stk)}</div>
+      <div class="meta">物販 ${yen(totalRevenue(e.id))} ・ 差引 ${yenSign(netTotal(e.id))} ・ 残 ${esc(stk)}</div>
       <div class="btns">${act?'':`<button class="sel" onclick="selectLiveAdmin('${e.id}')">選択</button>`}<button onclick="editLive('${e.id}')">編集</button><button class="del" onclick="removeLive('${e.id}')">削除</button></div>
     </div>`;
   }).join('');
@@ -648,32 +927,119 @@ function saveLive(id){
 }
 function removeLive(id){
   const e=eventById(id); if(!e)return;
-  const n=salesFor(id).length;
-  if(!confirm(n>0?`「${e.name}」には会計が${n}件あります。\nライブごと全部削除しますか？`:`「${e.name}」を削除しますか？`)) return;
-  db.sales=db.sales.filter(s=>s.eventId!==id); db.events=db.events.filter(x=>x.id!==id);
+  const nsales=salesFor(id).length;
+  const nledger=db.ledger.filter(l=>l.eventId===id).length;
+  const msg=(nsales>0||nledger>0)
+    ?`「${e.name}」には会計${nsales}件・帳簿${nledger}件があります。\nライブごと全部削除しますか？`
+    :`「${e.name}」を削除しますか？`;
+  if(!confirm(msg)) return;
+  db.sales=db.sales.filter(s=>s.eventId!==id);
+  db.ledger=db.ledger.filter(l=>l.eventId!==id);
+  db.events=db.events.filter(x=>x.id!==id);
   if(db.activeEventId===id) db.activeEventId=db.events.length?db.events[0].id:null;
   save(); renderAll(); toast('削除しました','warn');
 }
 
+// ---- カテゴリ管理 ----
+function toggleNewCategoryForm(){
+  const f=document.getElementById('newCatForm'); const show=f.style.display==='none';
+  if(show){ document.getElementById('ncName').value=''; document.getElementById('ncKind').value='income'; }
+  f.style.display=show?'block':'none';
+}
+function addCategory(){
+  const name=(document.getElementById('ncName').value||'').trim();
+  const kind=document.getElementById('ncKind').value;
+  if(!name){ toast('カテゴリ名を入力してください','warn'); return; }
+  db.categories.push({id:mkId('cat'),name,kind});
+  save(); document.getElementById('newCatForm').style.display='none'; renderAll(); toast('カテゴリを追加しました','ok');
+}
+function renderCatAdmin(){
+  const el=document.getElementById('catAdmin');
+  const groups=[['income','収入','var(--green)'],['expense','支出','var(--red)']];
+  el.innerHTML=groups.map(([k,label,col])=>{
+    const cs=db.categories.filter(c=>c.kind===k);
+    if(cs.length===0) return `<div class="subhead" style="margin-top:6px;color:${col}">${label}</div><div class="hint" style="margin:0 0 10px">カテゴリなし</div>`;
+    return `<div class="subhead" style="margin-top:6px;color:${col}">${label}</div>`+cs.map(c=>{
+      const used=db.ledger.filter(l=>l.categoryId===c.id).length;
+      const usedRev = c.autoFromSales ? totalRevenue(null) : 0;
+      const canDel=!c.system && used===0;
+      const tag=c.autoFromSales?'（グッズ売上を自動集計）':(c.system?'（標準）':'');
+      const usedTxt = c.autoFromSales
+        ? `物販売上 ${yen(usedRev)} を自動反映`
+        : `使用 ${used}件${used>0?' / '+yen(db.ledger.filter(l=>l.categoryId===c.id).reduce((a,l)=>a+l.amount,0)):''}`;
+      const btns=[];
+      if(!c.autoFromSales) btns.push(`<button onclick="editCategory('${c.id}')">名前変更</button>`);
+      if(canDel) btns.push(`<button class="del" onclick="removeCategory('${c.id}')">削除</button>`);
+      return `<div class="arow" id="ct_${c.id}">
+        <div class="top"><div><div class="nm">${esc(c.name)}</div><div class="dt" style="color:var(--muted);font-size:11px">${tag}</div></div></div>
+        <div class="meta">${usedTxt}</div>
+        ${btns.length?`<div class="btns">${btns.join('')}</div>`:''}
+      </div>`;
+    }).join('');
+  }).join('');
+}
+function editCategory(id){
+  const c=categoryById(id); if(!c)return;
+  document.getElementById('ct_'+id).innerHTML=`
+    <div class="field"><label>カテゴリ名</label><input type="text" class="text" id="ec_name_${id}" value="${esc(c.name)}"></div>
+    <div class="btns"><button class="sel" onclick="saveCategory('${id}')">保存</button><button onclick="renderCatAdmin()">取消</button></div>`;
+}
+function saveCategory(id){
+  const c=categoryById(id); if(!c)return;
+  const name=(document.getElementById('ec_name_'+id).value||'').trim();
+  if(!name){ toast('カテゴリ名を入力してください','warn'); return; }
+  c.name=name; save(); renderAll(); toast('保存しました','ok');
+}
+function removeCategory(id){
+  const c=categoryById(id); if(!c)return;
+  if(c.system){ toast('標準カテゴリは削除できません','warn'); return; }
+  const used=db.ledger.filter(l=>l.categoryId===id).length;
+  if(used>0){ toast('このカテゴリは使用中です','warn'); return; }
+  if(!confirm(`「${c.name}」を削除しますか？`)) return;
+  db.categories=db.categories.filter(x=>x.id!==id); save(); renderAll(); toast('削除しました','warn');
+}
+
 function resetAll(){
-  if(!confirm('全ての商品・ライブ・販売記録を削除します。よろしいですか？')) return;
+  if(!confirm('全ての商品・ライブ・販売記録・帳簿を削除します。よろしいですか？')) return;
   if(!confirm('本当に削除します。元に戻せません。')) return;
-  db=structuredClone(defaults); save(); cart={}; renderAll(); toast('リセットしました','warn');
+  db=normalize(structuredClone(defaults)); save(); cart={}; renderAll(); toast('リセットしました','warn');
 }
 
 // ---- CSV ----
 function exportCSV(){
-  const rows=[['日付','ライブ名','日時','商品','種別','数量','単価','小計','会計ID']];
+  const rows=[];
+  rows.push(['--- 物販 会計明細 ---']);
+  rows.push(['日付','ライブ名','日時','商品','種別','数量','単価','小計','会計ID']);
   for(const s of db.sales){ const e=eventById(s.eventId);
     for(const it of s.items) rows.push([e?fmtDateFull(e.date):'',e?e.name:'(不明)',fmtTimeFull(s.ts),it.name,TYPES[it.type]||it.type,it.qty,it.unit,it.unit*it.qty,s.id]); }
-  rows.push([]); rows.push(['--- ライブ別集計 ---']); rows.push(['日付','ライブ名','総売上','販売点数','会計回数']);
-  for(const e of db.events.slice().sort((a,b)=>a.date.localeCompare(b.date))) rows.push([fmtDateFull(e.date),e.name,totalRevenue(e.id),totalSold(e.id),salesFor(e.id).length]);
-  rows.push([]); rows.push(['--- 商品別集計（全期間） ---']); rows.push(['商品','販売点数','売上']);
+
+  rows.push([]); rows.push(['--- 帳簿 明細 ---']);
+  rows.push(['日付','ライブ名','種別','カテゴリ','金額','メモ']);
+  for(const l of db.ledger.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''))){
+    const e=l.eventId?eventById(l.eventId):null;
+    const c=categoryById(l.categoryId);
+    rows.push([fmtDateFull(l.date||''), e?e.name:'', l.kind==='income'?'収入':'支出', c?c.name:'?', l.amount, l.memo||'']);
+  }
+
+  rows.push([]); rows.push(['--- ライブ別 収支 ---']);
+  rows.push(['日付','ライブ名','物販売上','手動収入','支出','差引']);
+  for(const e of db.events.slice().sort((a,b)=>a.date.localeCompare(b.date))){
+    rows.push([fmtDateFull(e.date),e.name,totalRevenue(e.id),ledgerSum(e.id,'income'),expenseTotal(e.id),netTotal(e.id)]);
+  }
+  rows.push([]); rows.push(['--- 商品別 集計（全期間） ---']);
+  rows.push(['商品','販売点数','売上']);
   for(const p of db.products) rows.push([p.name,soldByProduct(null,p.id),soldRevProduct(p.id)]);
-  rows.push([]); rows.push(['--- 全期間合計 ---']); rows.push(['総売上',totalRevenue(null)]); rows.push(['販売点数合計',totalSold(null)]);
+
+  rows.push([]); rows.push(['--- 全期間 合計 ---']);
+  rows.push(['物販売上',totalRevenue(null)]);
+  rows.push(['手動収入',ledgerSum(null,'income')]);
+  rows.push(['収入合計',incomeTotal(null)]);
+  rows.push(['支出合計',expenseTotal(null)]);
+  rows.push(['差引',netTotal(null)]);
+
   const csv='﻿'+rows.map(r=>r.map(c=>{const v=String(c??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',')).join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='mcp_buppan_'+stamp()+'.csv';
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='mcp_book_'+stamp()+'.csv';
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000); toast('CSVを書き出しました','ok');
 }
 function fmtTimeFull(ts){const d=new Date(ts);const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;}
@@ -683,11 +1049,13 @@ function stamp(){const d=new Date();const z=n=>String(n).padStart(2,'0');return 
 let toastTimer=null;
 function toast(msg,kind){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+(kind||'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.className='';},1800);}
 function switchTab(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));window.scrollTo(0,0);}
-function fillMeta(){ document.getElementById('meta').textContent='商品 '+db.products.length+' ・ ライブ '+db.events.length+' ・ 会計 '+db.sales.length+'件 ・ ローカル保存（この端末内）'; }
+function fillMeta(){ document.getElementById('meta').textContent='商品 '+db.products.length+' ・ ライブ '+db.events.length+' ・ 会計 '+db.sales.length+' ・ 帳簿 '+db.ledger.length+'件 ・ ローカル保存（この端末内）'; }
 
 function renderAll(){
   renderLiveBar(); renderProducts(); renderCart();
-  renderStats(); renderHist(); renderProdAdmin(); renderLiveAdmin(); fillMeta();
+  renderBook(); renderStats(); renderHist();
+  renderProdAdmin(); renderLiveAdmin(); renderCatAdmin();
+  fillMeta();
 }
 renderAll();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }

@@ -1,7 +1,7 @@
 {
-  "name": "MIDNIGHT CHAT PARTY ステッカー販売",
-  "short_name": "MCP販売",
-  "description": "ステッカー販売の会計・在庫・売上管理",
+  "name": "MIDNIGHT CHAT PARTY 収支管理",
+  "short_name": "MCP収支",
+  "description": "物販・チケット・経費まで一括で管理するバンド帳簿",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

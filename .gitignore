@@ -1,0 +1,7 @@
+# 公開リポに含めない内部ファイル
+CLAUDE.md
+_serve.js
+.playwright-mcp/
+*.log
+WORKLOG.md
+.claude/
