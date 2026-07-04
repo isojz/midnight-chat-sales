@@ -12,6 +12,9 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <title>MIDNIGHT CHAT PARTY 収支管理</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bg:#0d0f12; --panel:#161a20; --panel2:#1d222a; --line:#2a313c;
@@ -39,6 +42,10 @@
   header .rev .lbl{font-size:10px;color:var(--muted)}
   header .rev .v{font-size:18px;font-weight:700;color:var(--green)}
   header .rev .v.minus{color:var(--red)}
+  header .rev .sync{font-size:9px;color:var(--muted);margin-top:2px;font-weight:600;letter-spacing:.3px}
+  header .rev .sync.sync-online{color:var(--green)}
+  header .rev .sync.sync-offline{color:var(--amber)}
+  header .rev .sync.sync-disabled{color:var(--red)}
   main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 90px}
   .view{display:none}
   .view.active{display:block}
@@ -273,7 +280,11 @@
 <body>
 <header>
   <div class="logo">&gt;_ <b>Midnight Chat Party</b></div>
-  <div class="rev"><div class="lbl" id="hdrLbl">このライブ収支</div><div class="v" id="hdrRev">¥0</div></div>
+  <div class="rev">
+    <div class="lbl" id="hdrLbl">このライブ収支</div>
+    <div class="v" id="hdrRev">¥0</div>
+    <div class="sync" id="syncStatus" title="クラウド同期の状態">🔄 接続中</div>
+  </div>
 </header>
 
 <main>
@@ -611,7 +622,92 @@ function migrate1(v){
   const d=normalize({products,events:[ev],activeEventId:id,sales});
   localStorage.setItem(KEY,JSON.stringify(d)); return d;
 }
-function save(){ localStorage.setItem(KEY,JSON.stringify(db)); }
+function save_local_only(){ localStorage.setItem(KEY,JSON.stringify(db)); }
+function save(){
+  db._updatedAt = Date.now();
+  save_local_only();
+  if(remoteApplyingLock) return;
+  save_remote();
+}
+
+// ---- Firebase / クラウド同期 ----
+const firebaseConfig = {
+  apiKey: "AIzaSyBarXMBfPi2pYuWPcg_j8GpAuSjl68v8Fc",
+  authDomain: "midnight-chat-book.firebaseapp.com",
+  projectId: "midnight-chat-book",
+  storageBucket: "midnight-chat-book.firebasestorage.app",
+  messagingSenderId: "1086029617398",
+  appId: "1:1086029617398:web:b7321f274968053ea2b4d7"
+};
+let fireApp=null, fireAuth=null, fireDb=null;
+let remoteApplyingLock=false, remoteUnsubscribe=null, initialSyncDone=false;
+
+function setSyncStatus(s){
+  const el=document.getElementById('syncStatus'); if(!el) return;
+  const map={connecting:'🔄 接続中',online:'☁ 同期中',offline:'📴 オフライン',disabled:'⚠ 同期無効'};
+  el.textContent=map[s]||s;
+  el.className='sync sync-'+s;
+}
+function initFirebase(){
+  if(typeof firebase==='undefined'){ setSyncStatus('disabled'); return; }
+  try{
+    fireApp=firebase.initializeApp(firebaseConfig);
+    fireAuth=firebase.auth();
+    fireDb=firebase.firestore();
+    fireDb.enablePersistence({synchronizeTabs:true}).catch(err=>console.warn('persistence:',err.code));
+    setSyncStatus('connecting');
+    fireAuth.signInAnonymously().catch(e=>{ console.warn('sign-in failed',e); setSyncStatus('disabled'); });
+    fireAuth.onAuthStateChanged(user=>{ if(user) subscribeRemote(); });
+    // オンライン/オフライン検知
+    window.addEventListener('online', ()=> save_remote());
+    window.addEventListener('offline', ()=> setSyncStatus('offline'));
+  }catch(e){ console.warn('firebase init',e); setSyncStatus('disabled'); }
+}
+function subscribeRemote(){
+  if(!fireDb) return;
+  if(remoteUnsubscribe) remoteUnsubscribe();
+  const docRef=fireDb.doc('apps/mcp_book');
+  remoteUnsubscribe=docRef.onSnapshot({includeMetadataChanges:true}, snap=>{
+    const fromCache=snap.metadata.fromCache;
+    if(!snap.exists){
+      if(!initialSyncDone){ save_remote(); initialSyncDone=true; }
+      setSyncStatus(fromCache?'offline':'online');
+      return;
+    }
+    const data=snap.data();
+    if(!data||!data.state){ setSyncStatus(fromCache?'offline':'online'); return; }
+    const remoteAt = typeof data.clientTs==='number' ? data.clientTs : 0;
+    const localAt = db._updatedAt||0;
+    if(remoteAt > localAt){
+      try{
+        const remoteState=JSON.parse(data.state);
+        remoteApplyingLock=true;
+        db=normalize(remoteState);
+        db._updatedAt=remoteAt;
+        save_local_only();
+        cart={};
+        renderAll();
+      }catch(e){ console.warn('remote parse',e); }
+      finally{ remoteApplyingLock=false; }
+    } else if(remoteAt < localAt && !initialSyncDone){
+      save_remote();
+    }
+    initialSyncDone=true;
+    setSyncStatus(fromCache?'offline':'online');
+  }, err=>{ console.warn('snapshot',err); setSyncStatus('disabled'); });
+}
+async function save_remote(){
+  if(!fireDb || !fireAuth || !fireAuth.currentUser) return;
+  try{
+    await fireDb.doc('apps/mcp_book').set({
+      state: JSON.stringify(db),
+      clientTs: db._updatedAt || Date.now(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      lastUser: fireAuth.currentUser.uid
+    });
+    if(navigator.onLine) setSyncStatus('online');
+  }catch(e){ console.warn('remote save',e); setSyncStatus('offline'); }
+}
 
 function yen(n){ return '¥'+Number(n||0).toLocaleString('ja-JP'); }
 function yenSign(n){ const s=n>=0?'+':'−'; return s+'¥'+Math.abs(Number(n||0)).toLocaleString('ja-JP'); }
@@ -1575,7 +1671,7 @@ function importJSON(file){
 let toastTimer=null;
 function toast(msg,kind){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+(kind||'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.className='';},1800);}
 function switchTab(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));window.scrollTo(0,0);}
-const APP_VER='v6.10';
+const APP_VER='v7.0';
 function fillMeta(){ document.getElementById('meta').textContent='商品 '+db.products.length+' ・ ライブ '+db.events.length+' ・ 会計 '+db.sales.length+' ・ 帳簿 '+db.ledger.length+' ・ メンバー '+(db.members.filter(m=>!m.system).length)+'人 ・ '+APP_VER+' ・ ローカル保存（この端末内）'; }
 
 function renderAll(){
@@ -1585,6 +1681,7 @@ function renderAll(){
   fillMeta();
 }
 renderAll();
+initFirebase();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
 </script>
 </body>
