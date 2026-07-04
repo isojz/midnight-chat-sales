@@ -1,5 +1,5 @@
 // MIDNIGHT CHAT PARTY 販売アプリ — オフライン用 Service Worker
-const CACHE='mcp-book-v8';
+const CACHE='mcp-book-v9';
 const ASSETS=[
   './',
   './index.html',

@@ -152,6 +152,26 @@
   .settlerow .net.minus{color:var(--red)}
   .settlerow .net.zero{color:var(--muted)}
 
+  /* ---- 精算指示 ---- */
+  .transfer{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel2);border:1px solid var(--cyan-d);border-radius:11px;margin-bottom:8px}
+  .transfer .from{font-weight:700}
+  .transfer .arrow{color:var(--cyan);font-weight:700}
+  .transfer .to{font-weight:700}
+  .transfer .amt{margin-left:auto;font-weight:800;font-size:16px;color:var(--cyan)}
+
+  /* ---- 割り勘UI（記帳モーダル）---- */
+  .splitmode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .splitmode button{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font-weight:700;cursor:pointer;font-size:13px}
+  .splitmode button.active{background:rgba(255,93,108,.14);border-color:var(--red);color:var(--red)}
+  .splitmode button:active{transform:scale(.97)}
+  .splitmode.income button.active{background:rgba(61,220,132,.14);border-color:var(--green);color:var(--green)}
+  .splitpeople{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px}
+  .splitchk{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:13px;cursor:pointer;font-weight:600}
+  .splitchk.active{border-color:var(--cyan);background:rgba(57,208,216,.12);color:var(--cyan)}
+  .splitchk .box{width:16px;height:16px;border:2px solid var(--muted);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);flex:none}
+  .splitchk.active .box{border-color:var(--cyan);background:var(--cyan);color:#0d0f12}
+  .splithint{font-size:11px;color:var(--muted);margin-bottom:10px;padding:6px 10px;background:var(--panel2);border-radius:8px}
+
   /* ---- scope toggle ---- */
   .scopetoggle{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px;gap:4px}
   .scopetoggle button{flex:1;background:none;border:none;color:var(--muted);padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer}
@@ -428,7 +448,19 @@
     <div class="sheet-h" id="lmTitle">記録<button class="cls" onclick="closeLedgerForm()">✕</button></div>
     <div class="hint" style="margin:-6px 0 8px">カテゴリを選び、金額を入力してください。</div>
     <div class="catgrid" id="lmCats"></div>
-    <div class="field"><label>金額（円）</label><input type="number" inputmode="numeric" id="lmAmount" min="0" placeholder="0"></div>
+    <div id="lmSplitWrap" style="display:none">
+      <div class="subhead" style="margin:6px 0 6px">支払い方法</div>
+      <div class="splitmode" id="lmSplitMode">
+        <button data-mode="none" onclick="setSplitMode('none')">💼 バンド共通</button>
+        <button data-mode="even" onclick="setSplitMode('even')">🤝 割り勘</button>
+      </div>
+      <div id="lmSplitPeopleWrap" style="display:none">
+        <div class="subhead" style="margin:0 0 6px">参加者（均等割り）</div>
+        <div class="splitpeople" id="lmSplitPeople"></div>
+        <div class="splithint" id="lmSplitHint"></div>
+      </div>
+    </div>
+    <div class="field"><label>金額（円）</label><input type="number" inputmode="numeric" id="lmAmount" min="0" placeholder="0" oninput="updateSplitHint()"></div>
     <div class="field"><label>日付</label><input type="date" id="lmDate"></div>
     <div class="field"><label>メモ</label><input type="text" class="text" id="lmMemo" placeholder="任意（例: 〇〇スタジオ）"></div>
     <div class="field wide"><label>ライブ</label><select id="lmEvent"></select></div>
@@ -440,7 +472,7 @@
 <div id="toast"></div>
 
 <script>
-const KEY='mcp_book_v5', V4='mcp_book_v4', V3='mcp_sticker_v3', V2='mcp_sticker_v2', V1='mcp_sticker_v1';
+const KEY='mcp_book_v6', V5='mcp_book_v5', V4='mcp_book_v4', V3='mcp_sticker_v3', V2='mcp_sticker_v2', V1='mcp_sticker_v1';
 const TYPES={normal:'通常',discount:'割引'};
 
 const DEFAULT_CATS=[
@@ -486,6 +518,8 @@ let db=load();
 let cart={};
 let statScope='event', histScope='event', bookScope='event';
 let lmKind='income', lmCatId=null;
+let lmSplitMode='none';       // 'none' | 'even'
+let lmSplitAmong=[];          // memberIds
 
 function mkId(p){ return p+'_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); }
 
@@ -493,6 +527,7 @@ function load(){
   try{
     const raw=localStorage.getItem(KEY);
     if(raw) return normalize(JSON.parse(raw));
+    const v5=localStorage.getItem(V5); if(v5){ const d=normalize(JSON.parse(v5)); localStorage.setItem(KEY,JSON.stringify(d)); return d; }
     const v4=localStorage.getItem(V4); if(v4){ const d=normalize(JSON.parse(v4)); localStorage.setItem(KEY,JSON.stringify(d)); return d; }
     const v3=localStorage.getItem(V3); if(v3){ const d=normalize(JSON.parse(v3)); localStorage.setItem(KEY,JSON.stringify(d)); return d; }
     const v2=localStorage.getItem(V2); if(v2) return migrate2(JSON.parse(v2));
@@ -520,7 +555,11 @@ function normalize(d){
     } else if(dm.system){ ex.system=true; }
   }
   if(!d.membersSeeded) d.membersSeeded=true;
-  for(const l of d.ledger){ if(!l.memberId) l.memberId='m_common'; }
+  for(const l of d.ledger){
+    if(!l.memberId) l.memberId='m_common';
+    if(!l.splitMode) l.splitMode='none';
+    if(!Array.isArray(l.splitAmong)) l.splitAmong=[];
+  }
   for(const e of d.events){ if(!e.stock||typeof e.stock!=='object') e.stock={}; }
   for(const p of d.products){ if(p.discount==='') p.discount=null; if(p.trackStock===undefined) p.trackStock=true; }
   if(d.activeEventId===undefined) d.activeEventId=null;
@@ -780,12 +819,59 @@ function openLedgerForm(kind, presetCatId){
   document.getElementById('lmMemberLabel').textContent = kind==='income'?'受け取った人':'立て替えた人';
   const mSel=document.getElementById('lmMember');
   mSel.innerHTML=db.members.map(m=>`<option value="${m.id}" ${m.id==='m_common'?'selected':''}>${esc(m.name)}</option>`).join('');
+  // 割り勘UI（支出時のみ表示）
+  const splitWrap=document.getElementById('lmSplitWrap');
+  if(kind==='expense'){
+    splitWrap.style.display='block';
+    document.getElementById('lmSplitMode').className='splitmode';
+    lmSplitAmong = db.members.filter(m=>!m.system).map(m=>m.id);
+    setSplitMode('none');
+  } else {
+    splitWrap.style.display='none';
+    lmSplitMode='none'; lmSplitAmong=[];
+  }
   // プリセットカテゴリ（点検からの起動時）
   if(presetCatId){ pickLedgerCat(presetCatId); }
   const btn=document.getElementById('lmSaveBtn');
   btn.className='btn save '+kind;
   btn.textContent=(kind==='income'?'収入を記録する':'支出を記録する');
   document.getElementById('ledgerModal').classList.add('show');
+}
+function setSplitMode(mode){
+  lmSplitMode=mode;
+  document.querySelectorAll('#lmSplitMode button').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  document.getElementById('lmSplitPeopleWrap').style.display = mode==='even'?'block':'none';
+  if(mode==='even') renderSplitPeople();
+  updateSplitHint();
+}
+function renderSplitPeople(){
+  const targets=db.members.filter(m=>!m.system);
+  if(targets.length===0){
+    document.getElementById('lmSplitPeople').innerHTML='<div class="hint" style="margin:0;grid-column:1/-1">設定タブでメンバーを追加してください</div>';
+    return;
+  }
+  document.getElementById('lmSplitPeople').innerHTML=targets.map(m=>{
+    const active=lmSplitAmong.includes(m.id);
+    return `<div class="splitchk ${active?'active':''}" onclick="toggleSplitPerson('${m.id}')">
+      <div class="box">${active?'✓':''}</div><span>${esc(m.name)}</span>
+    </div>`;
+  }).join('');
+}
+function toggleSplitPerson(id){
+  if(lmSplitAmong.includes(id)) lmSplitAmong=lmSplitAmong.filter(x=>x!==id);
+  else lmSplitAmong.push(id);
+  renderSplitPeople(); updateSplitHint();
+}
+function updateSplitHint(){
+  const el=document.getElementById('lmSplitHint'); if(!el) return;
+  if(lmSplitMode!=='even'){ el.textContent=''; return; }
+  const n=lmSplitAmong.length;
+  const amt=parseInt(document.getElementById('lmAmount').value,10)||0;
+  if(n===0){ el.textContent='参加者を1人以上選んでください'; return; }
+  if(amt<=0){ el.textContent=`${n}人で割り勘 — 金額を入力すると1人あたりが表示される`; return; }
+  const per=Math.floor(amt/n);
+  const rem=amt - per*n;
+  el.textContent=`1人あたり ${yen(per)}${rem?`（端数 ¥${rem} は立替者負担）`:''} × ${n}人`;
 }
 function closeLedgerForm(){ document.getElementById('ledgerModal').classList.remove('show'); }
 function pickLedgerCat(id){
@@ -796,11 +882,19 @@ function saveLedger(){
   if(!lmCatId){ toast('カテゴリを選択してください','warn'); return; }
   const amt=parseInt(document.getElementById('lmAmount').value,10);
   if(isNaN(amt)||amt<=0){ toast('金額を入力してください','warn'); return; }
+  if(lmKind==='expense' && lmSplitMode==='even' && lmSplitAmong.length===0){
+    toast('割り勘の参加者を1人以上選んでください','warn'); return;
+  }
   const date=document.getElementById('lmDate').value||todayStr();
   const memo=(document.getElementById('lmMemo').value||'').trim();
   const eventId=document.getElementById('lmEvent').value||null;
   const memberId=document.getElementById('lmMember').value||'m_common';
-  db.ledger.push({id:mkId('l'),ts:Date.now(),date,eventId,kind:lmKind,categoryId:lmCatId,amount:amt,memo,memberId});
+  const entry={id:mkId('l'),ts:Date.now(),date,eventId,kind:lmKind,categoryId:lmCatId,amount:amt,memo,memberId,splitMode:'none',splitAmong:[]};
+  if(lmKind==='expense' && lmSplitMode==='even'){
+    entry.splitMode='even';
+    entry.splitAmong=[...lmSplitAmong];
+  }
+  db.ledger.push(entry);
   save(); closeLedgerForm(); renderAll();
   toast((lmKind==='income'?'収入':'支出')+' '+yen(amt)+' を記録','ok');
 }
@@ -885,35 +979,109 @@ function renderStats(){
 }
 
 // ---- メンバー精算 ----
+// バンド収入・バンド共通支出は「バンド金庫」に入る前提で、メンバー間精算からは除外。
+// メンバー間精算対象 = 「splitMode='even' かつ 立替者が個人メンバー」の支出のみ
+// paidSplit: そのメンバーが割り勘立替で払った額
+// share: そのメンバーが割り勘参加で負担すべき額
+// bandExpense: バンド金庫への貸し（バンド共通支出を立て替えた額）
+// received: そのメンバーが受け取った収入（バンド金庫に戻すべき額）
+// splitNet = paidSplit - share  （正=メンバーから受け取る、負=メンバーに払う）
+// bandNet = bandExpense - received （正=バンド金庫から返してもらう、負=バンド金庫に納める）
 function memberBalance(memberId, eventId){
-  let expense=0, income=0;
+  let paidSplit=0, share=0, bandExpense=0, received=0;
   for(const l of ledgerFor(eventId)){
-    if((l.memberId||'m_common')!==memberId) continue;
-    if(l.kind==='expense') expense+=l.amount||0;
-    else income+=l.amount||0;
+    const payer = l.memberId||'m_common';
+    if(l.kind==='expense'){
+      if(l.splitMode==='even'){
+        // 立替者が個人メンバーの場合のみメンバー間精算に含める
+        if(payer!=='m_common' && payer===memberId) paidSplit+=l.amount||0;
+        if(payer!=='m_common' && Array.isArray(l.splitAmong) && l.splitAmong.includes(memberId) && l.splitAmong.length>0){
+          share += (l.amount||0) / l.splitAmong.length;
+        }
+      } else {
+        // バンド共通支出: 立替者が個人ならバンド金庫との貸し借り
+        if(payer!=='m_common' && payer===memberId) bandExpense+=l.amount||0;
+      }
+    } else {
+      // 収入: 受け取った個人 → バンド金庫に戻す
+      if(payer!=='m_common' && payer===memberId) received+=l.amount||0;
+    }
   }
-  return {expense, income, net: expense-income};
+  const splitNet = paidSplit - share;
+  const bandNet = bandExpense - received;
+  return {paidSplit, share, bandExpense, received, splitNet, bandNet, net: splitNet + bandNet};
+}
+// 最小回数の精算指示（メンバー間割り勘のみ、合計必ずゼロ）
+function computeSettlements(eventId){
+  const targets=db.members.filter(m=>!m.system);
+  const bals=targets.map(m=>({id:m.id, name:m.name, bal:Math.round(memberBalance(m.id,eventId).splitNet)}));
+  const creditors=bals.filter(b=>b.bal>0).map(b=>({...b})).sort((a,b)=>b.bal-a.bal);
+  const debtors  =bals.filter(b=>b.bal<0).map(b=>({...b, bal:-b.bal})).sort((a,b)=>b.bal-a.bal);
+  const transfers=[];
+  let i=0, j=0;
+  while(i<debtors.length && j<creditors.length){
+    const amt=Math.min(debtors[i].bal, creditors[j].bal);
+    if(amt>=1) transfers.push({from:debtors[i].name, to:creditors[j].name, amount:amt});
+    debtors[i].bal-=amt; creditors[j].bal-=amt;
+    if(debtors[i].bal<1) i++;
+    if(creditors[j].bal<1) j++;
+  }
+  return transfers;
 }
 function renderSettlement(id){
   const wrap=document.getElementById('settleWrap');
   const targets=db.members.filter(m=>!m.system);
   if(targets.length===0){ wrap.innerHTML=''; return; }
-  // 対象メンバーの立替/受取が全部0なら非表示
-  const rows=targets.map(m=>({name:m.name, ...memberBalance(m.id,id)}));
-  const totalActivity=rows.reduce((a,r)=>a+r.expense+r.income,0);
+  const rows=targets.map(m=>({name:m.name, id:m.id, ...memberBalance(m.id,id)}));
+  const totalActivity=rows.reduce((a,r)=>a+r.paidSplit+r.share+r.bandExpense+r.received,0);
   if(totalActivity===0){ wrap.innerHTML=''; return; }
-  wrap.innerHTML=`<div class="subhead">メンバー精算</div><div class="section" style="margin-bottom:14px">${
-    rows.map(r=>{
-      const cls = r.net>0?'plus':(r.net<0?'minus':'zero');
-      return `<div class="settlerow">
-        <div style="flex:1">
-          <div class="nm">${esc(r.name)}</div>
-          <div class="breakdown">立替 ${yen(r.expense)} / 受取 ${yen(r.income)}</div>
-        </div>
-        <div class="net ${cls}">${yenSign(r.net)}</div>
-      </div>`;
-    }).join('')
-  }</div><div class="hint" style="margin-top:-6px">正 = バンドから返してもらう額 / 負 = バンドに払う額</div>`;
+
+  // メンバー間精算（割り勘由来）
+  const transfers=computeSettlements(id);
+  const anySplitActivity=rows.some(r=>r.paidSplit>0||r.share>0);
+  const splitSection = anySplitActivity ? `
+    <div class="subhead">メンバー間 精算（割り勘）</div>
+    <div class="section" style="margin-bottom:12px">${
+      rows.map(r=>{
+        const net=Math.round(r.splitNet);
+        const cls = net>0?'plus':(net<0?'minus':'zero');
+        const detail=[];
+        if(r.paidSplit>0) detail.push('立替 '+yen(r.paidSplit));
+        if(r.share>0) detail.push('負担 '+yen(Math.round(r.share)));
+        return `<div class="settlerow">
+          <div style="flex:1"><div class="nm">${esc(r.name)}</div><div class="breakdown">${detail.length?detail.join(' / '):'参加なし'}</div></div>
+          <div class="net ${cls}">${yenSign(net)}</div>
+        </div>`;
+      }).join('')
+    }</div>
+    ${transfers.length
+      ? `${transfers.map(t=>`<div class="transfer"><span class="from">${esc(t.from)}</span><span class="arrow">→</span><span class="to">${esc(t.to)}</span><span class="amt">${yen(t.amount)}</span></div>`).join('')}
+         <div class="hint" style="margin:6px 0 12px">この通りに払えばメンバー間の残高がゼロに戻る（最小回数で計算）</div>`
+      : `<div class="hint" style="margin:0 0 12px">メンバー間で払うべき／受け取るべき残高なし</div>`}
+  ` : '';
+
+  // バンド金庫との貸借（バンド共通支出・収入を立替/受取したメンバー）
+  const anyBandActivity=rows.some(r=>r.bandExpense>0||r.received>0);
+  const bandSection = anyBandActivity ? `
+    <div class="subhead">バンド金庫との貸借（要清算）</div>
+    <div class="section" style="margin-bottom:12px">${
+      rows.map(r=>{
+        const net=Math.round(r.bandNet);
+        if(r.bandExpense===0 && r.received===0) return '';
+        const cls = net>0?'plus':(net<0?'minus':'zero');
+        const detail=[];
+        if(r.bandExpense>0) detail.push('立替 '+yen(r.bandExpense));
+        if(r.received>0) detail.push('受取 '+yen(r.received));
+        return `<div class="settlerow">
+          <div style="flex:1"><div class="nm">${esc(r.name)}</div><div class="breakdown">${detail.join(' / ')}</div></div>
+          <div class="net ${cls}">${yenSign(net)}</div>
+        </div>`;
+      }).join('')
+    }</div>
+    <div class="hint" style="margin:0 0 12px">正 = バンド金庫から返してもらう額 / 負 = バンド金庫に納める額</div>
+  ` : '';
+
+  wrap.innerHTML = splitSection + bandSection;
 }
 
 // ---- 履歴（物販会計） ----
@@ -1114,9 +1282,10 @@ function renderMemAdmin(){
     const btns=[];
     if(!m.system) btns.push(`<button onclick="editMember('${m.id}')">名前変更</button>`);
     if(canDel) btns.push(`<button class="del" onclick="removeMember('${m.id}')">削除</button>`);
+    const totalPaid = (b.paidSplit||0)+(b.bandExpense||0);
     const summary = m.system
       ? `使用 ${used}件`
-      : `使用 ${used}件・立替 ${yen(b.expense)} / 受取 ${yen(b.income)} = 差引 ${yenSign(b.net)}`;
+      : `使用 ${used}件・立替 ${yen(totalPaid)} / 受取 ${yen(b.received||0)} = 差引 ${yenSign(Math.round(b.net||0))}`;
     return `<div class="arow" id="mr_${m.id}">
       <div class="top"><div><div class="nm">${esc(m.name)}</div><div class="dt" style="color:var(--muted);font-size:11px">${tag}</div></div></div>
       <div class="meta">${summary}</div>
@@ -1219,12 +1388,14 @@ function exportCSV(){
     for(const it of s.items) rows.push([e?fmtDateFull(e.date):'',e?e.name:'(不明)',fmtTimeFull(s.ts),it.name,TYPES[it.type]||it.type,it.qty,it.unit,it.unit*it.qty,s.id]); }
 
   rows.push([]); rows.push(['--- 帳簿 明細 ---']);
-  rows.push(['日付','ライブ名','種別','カテゴリ','立替/受取者','金額','メモ']);
+  rows.push(['日付','ライブ名','種別','カテゴリ','立替/受取者','金額','分割','参加者','メモ']);
   for(const l of db.ledger.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''))){
     const e=l.eventId?eventById(l.eventId):null;
     const c=categoryById(l.categoryId);
     const m=memberById(l.memberId||'m_common');
-    rows.push([fmtDateFull(l.date||''), e?e.name:'', l.kind==='income'?'収入':'支出', c?c.name:'?', m?m.name:'', l.amount, l.memo||'']);
+    const split = l.splitMode==='even'?'割り勘':'バンド共通';
+    const among = (l.splitAmong||[]).map(mid=>{const mm=memberById(mid);return mm?mm.name:'?';}).join('/');
+    rows.push([fmtDateFull(l.date||''), e?e.name:'', l.kind==='income'?'収入':'支出', c?c.name:'?', m?m.name:'', l.amount, split, among, l.memo||'']);
   }
 
   rows.push([]); rows.push(['--- ライブ別 収支 ---']);
@@ -1235,11 +1406,24 @@ function exportCSV(){
 
   const settleTargets=db.members.filter(m=>!m.system);
   if(settleTargets.length){
-    rows.push([]); rows.push(['--- メンバー別 精算（全期間） ---']);
-    rows.push(['名前','立替(支出)','受取(収入)','差引(バンドから返す額)']);
+    rows.push([]); rows.push(['--- メンバー間 割り勘残高（全期間） ---']);
+    rows.push(['名前','割り勘立替','割り勘負担','差引(正=受け取る/負=払う)']);
     for(const m of settleTargets){
       const b=memberBalance(m.id,null);
-      rows.push([m.name,b.expense,b.income,b.net]);
+      rows.push([m.name,b.paidSplit,Math.round(b.share),Math.round(b.splitNet)]);
+    }
+    const transfers=computeSettlements(null);
+    if(transfers.length){
+      rows.push([]); rows.push(['--- 精算指示（メンバー間・最小回数）---']);
+      rows.push(['支払い元','支払い先','金額']);
+      for(const t of transfers) rows.push([t.from,t.to,t.amount]);
+    }
+    rows.push([]); rows.push(['--- バンド金庫との貸借（全期間）---']);
+    rows.push(['名前','バンド共通立替','バンド収入受取','差引(正=金庫から返す/負=金庫に納める)']);
+    for(const m of settleTargets){
+      const b=memberBalance(m.id,null);
+      if(b.bandExpense===0 && b.received===0) continue;
+      rows.push([m.name,b.bandExpense,b.received,Math.round(b.bandNet)]);
     }
   }
 
