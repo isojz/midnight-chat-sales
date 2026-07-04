@@ -384,8 +384,16 @@
       <div class="hint">「グッズ物販」は物販タブの売上を自動集計するカテゴリ（削除・名前変更不可）。標準カテゴリは削除不可・名前変更のみ可能。</div>
     </div>
 
-    <button class="btn ghost" onclick="exportCSV()">CSVバックアップ</button>
-    <div style="height:10px"></div>
+    <div class="section">
+      <h3>バックアップ / 端末間コピー</h3>
+      <button class="btn ghost" onclick="exportCSV()">📄 CSVで書き出し</button>
+      <div style="height:8px"></div>
+      <button class="btn ghost" onclick="exportJSON()">💾 JSONで書き出し</button>
+      <div style="height:8px"></div>
+      <button class="btn ghost" onclick="document.getElementById('jsonInput').click()">📥 JSONを読み込み</button>
+      <input type="file" id="jsonInput" accept=".json,application/json" style="display:none" onchange="importJSON(this.files[0])">
+      <div class="hint">CSVは表計算/集計用。JSONは完全バックアップで、別端末に読み込むとデータをそのまま移せる（PC↔スマホ移行に）。</div>
+    </div>
     <button class="btn danger" onclick="resetAll()">全データをリセット</button>
     <div class="hint" style="text-align:center;margin-top:14px" id="meta"></div>
   </section>
@@ -1253,6 +1261,41 @@ function exportCSV(){
 }
 function fmtTimeFull(ts){const d=new Date(ts);const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;}
 function stamp(){const d=new Date();const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;}
+
+// ---- JSON バックアップ ----
+function exportJSON(){
+  const payload = { app:'mcp_book', version:KEY, exportedAt:Date.now(), data:db };
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'mcp_book_backup_'+stamp()+'.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  toast('JSONを書き出しました','ok');
+}
+function importJSON(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const payload = JSON.parse(reader.result);
+      if(!payload || payload.app!=='mcp_book' || !payload.data){
+        toast('このアプリのバックアップファイルではありません','warn'); return;
+      }
+      const incoming = normalize(payload.data);
+      const summary = `商品 ${incoming.products.length} / ライブ ${incoming.events.length} / 会計 ${incoming.sales.length} / 帳簿 ${incoming.ledger.length} / メンバー ${incoming.members.filter(m=>!m.system).length}`;
+      if(!confirm(`このバックアップを読み込みますか？\n\n${summary}\n\n※現在のデータは上書きされます。心配なら先に「JSONで書き出し」でバックアップを取っておくことを推奨。`)) {
+        document.getElementById('jsonInput').value=''; return;
+      }
+      db = incoming; save(); cart={}; renderAll();
+      toast('読み込みました','ok');
+    } catch(e) {
+      toast('ファイルの読み込みに失敗しました','warn');
+    }
+    document.getElementById('jsonInput').value='';
+  };
+  reader.readAsText(file);
+}
 
 // ---- util ----
 let toastTimer=null;
