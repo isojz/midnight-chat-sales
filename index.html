@@ -1575,7 +1575,8 @@ function importJSON(file){
 let toastTimer=null;
 function toast(msg,kind){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+(kind||'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.className='';},1800);}
 function switchTab(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));window.scrollTo(0,0);}
-function fillMeta(){ document.getElementById('meta').textContent='商品 '+db.products.length+' ・ ライブ '+db.events.length+' ・ 会計 '+db.sales.length+' ・ 帳簿 '+db.ledger.length+' ・ メンバー '+(db.members.filter(m=>!m.system).length)+'人 ・ ローカル保存（この端末内）'; }
+const APP_VER='v6.10';
+function fillMeta(){ document.getElementById('meta').textContent='商品 '+db.products.length+' ・ ライブ '+db.events.length+' ・ 会計 '+db.sales.length+' ・ 帳簿 '+db.ledger.length+' ・ メンバー '+(db.members.filter(m=>!m.system).length)+'人 ・ '+APP_VER+' ・ ローカル保存（この端末内）'; }
 
 function renderAll(){
   renderLiveBar(); renderProducts(); renderCart();
