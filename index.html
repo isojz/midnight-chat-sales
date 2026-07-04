@@ -113,6 +113,7 @@
   .lgitem .icon.income{background:rgba(61,220,132,.15);color:var(--green)}
   .lgitem .icon.expense{background:rgba(255,93,108,.15);color:var(--red)}
   .lgitem .icon.sales{background:rgba(57,208,216,.15);color:var(--cyan)}
+  .lgitem .icon.transfer{background:rgba(255,194,75,.15);color:var(--amber)}
   .lgitem .info{flex:1;min-width:0}
   .lgitem .info .cat{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .lgitem .info .meta{font-size:11px;color:var(--muted);margin-top:2px}
@@ -120,6 +121,7 @@
   .lgitem .amt{font-weight:700;font-size:15px;flex:none;text-align:right}
   .lgitem .amt.income{color:var(--green)}
   .lgitem .amt.expense{color:var(--red)}
+  .lgitem .amt.transfer{color:var(--amber)}
   .lgitem .del{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#222934;color:var(--red);font-size:13px;cursor:pointer;flex:none}
 
   .catgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -157,7 +159,9 @@
   .transfer .from{font-weight:700}
   .transfer .arrow{color:var(--cyan);font-weight:700}
   .transfer .to{font-weight:700}
-  .transfer .amt{margin-left:auto;font-weight:800;font-size:16px;color:var(--cyan)}
+  .transfer .amt{margin-left:auto;font-weight:800;font-size:15px;color:var(--cyan)}
+  .transfer .tdone{background:var(--green-d);color:#fff;border:none;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;flex:none}
+  .transfer .tdone:active{transform:scale(.95)}
 
   /* ---- 割り勘UI（記帳モーダル）---- */
   .splitmode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
@@ -439,6 +443,20 @@
       <button class="btn save" onclick="addLive()">このライブを追加して選択</button>
     </div>
     <button class="btn ghost" id="newLiveBtn" style="margin-top:6px" onclick="toggleNewLiveForm()">＋ 新しいライブを登録</button>
+  </div>
+</div>
+
+<!-- 精算（手動）モーダル -->
+<div class="modal" id="transferModal">
+  <div class="sheet">
+    <div class="sheet-h">メンバー間で渡した記録<button class="cls" onclick="closeTransferForm()">✕</button></div>
+    <div class="hint" style="margin:-6px 0 8px">「AがBに何円渡した」を記録します（精算指示の残高から相殺）。</div>
+    <div class="field wide"><label>渡した人</label><select id="tfFrom"></select></div>
+    <div class="field wide"><label>受け取った人</label><select id="tfTo"></select></div>
+    <div class="field"><label>金額（円）</label><input type="number" inputmode="numeric" id="tfAmount" min="0" placeholder="0"></div>
+    <div class="field"><label>日付</label><input type="date" id="tfDate"></div>
+    <div class="field"><label>メモ</label><input type="text" class="text" id="tfMemo" placeholder="任意"></div>
+    <button class="btn save" onclick="saveTransfer()">記録する</button>
   </div>
 </div>
 
@@ -768,8 +786,13 @@ function renderBookList(id, useEvent){
     const e=eventById(eid);
     items.push({sort:e?e.date+' zzz':'', kind:'income', amt:rev, cat:'グッズ物販', memo:`${q}点 / ${salesFor(eid).length}会計`, eventId:eid, sales:true, id:'sales_'+eid, date:e?e.date:''});
   }
-  // 手動記帳
+  // 手動記帳 + 精算(transfer)
   for(const l of (id? db.ledger.filter(x=>x.eventId===id): db.ledger)){
+    if(l.kind==='transfer'){
+      const fm=memberById(l.from), tm=memberById(l.to);
+      items.push({sort:(l.date||'')+' '+l.ts, kind:'transfer', amt:l.amount||0, cat:`${fm?fm.name:'?'} → ${tm?tm.name:'?'}`, memo:l.memo||'（精算）', eventId:l.eventId, sales:false, id:l.id, date:l.date, ts:l.ts});
+      continue;
+    }
     const c=categoryById(l.categoryId);
     items.push({sort:(l.date||'')+' '+l.ts, kind:l.kind, amt:l.amount||0, cat:c?c.name:'?', memo:l.memo||'', eventId:l.eventId, sales:false, id:l.id, date:l.date, ts:l.ts});
   }
@@ -777,8 +800,8 @@ function renderBookList(id, useEvent){
   if(items.length===0){ el.innerHTML='<div class="emptybox">'+(bookScope==='event'&&!useEvent?'ライブを選択してください':'まだ記録がありません')+'</div>'; return; }
   el.innerHTML=items.map(x=>{
     const iconCls = x.sales?'sales':x.kind;
-    const iconCh = x.sales?'🛍':(x.kind==='income'?'＋':'−');
-    const amtSign = x.kind==='income'?'+':'−';
+    const iconCh = x.sales?'🛍':(x.kind==='transfer'?'↔':(x.kind==='income'?'＋':'−'));
+    const amtSign = x.kind==='transfer'?'':(x.kind==='income'?'+':'−');
     const ev=x.eventId?eventById(x.eventId):null;
     const lvTag = (!useEvent && ev)?`${esc(ev.name)}・`:'';
     const dt = x.date ? fmtDateFull(x.date) : '';
@@ -899,10 +922,61 @@ function saveLedger(){
   toast((lmKind==='income'?'収入':'支出')+' '+yen(amt)+' を記録','ok');
 }
 function quickAddLedger(kind,catId){ openLedgerForm(kind,catId); }
+
+// 精算指示行の「✓済み」ボタンから transfer entry を記録
+function markSettlementDone(fromId, toId, amount){
+  const fromM=memberById(fromId), toM=memberById(toId);
+  if(!fromM || !toM){ toast('メンバーが見つかりません','warn'); return; }
+  if(!confirm(`${fromM.name}が${toM.name}に ${yen(amount)} を渡した、として記録しますか？`)) return;
+  const ev=activeEvent();
+  db.ledger.push({
+    id:mkId('t'), ts:Date.now(),
+    date: ev? ev.date : todayStr(),
+    eventId: ev? ev.id : null,
+    kind:'transfer',
+    from: fromId, to: toId,
+    amount, memo:''
+  });
+  save(); renderAll(); toast(`${fromM.name}→${toM.name} ${yen(amount)} 記録`,'ok');
+}
+// 任意額の精算を手動で追加するモーダル
+function openTransferForm(){
+  const targets=db.members.filter(m=>!m.system);
+  if(targets.length<2){ toast('メンバーが2人以上必要です','warn'); return; }
+  document.getElementById('tfFrom').innerHTML=targets.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  document.getElementById('tfTo').innerHTML=targets.map((m,i)=>`<option value="${m.id}" ${i===1?'selected':''}>${esc(m.name)}</option>`).join('');
+  document.getElementById('tfAmount').value='';
+  document.getElementById('tfMemo').value='';
+  const ev=activeEvent();
+  document.getElementById('tfDate').value = ev? ev.date : todayStr();
+  document.getElementById('transferModal').classList.add('show');
+}
+function closeTransferForm(){ document.getElementById('transferModal').classList.remove('show'); }
+function saveTransfer(){
+  const from=document.getElementById('tfFrom').value;
+  const to=document.getElementById('tfTo').value;
+  if(from===to){ toast('別のメンバーを選んでください','warn'); return; }
+  const amount=parseInt(document.getElementById('tfAmount').value,10);
+  if(isNaN(amount)||amount<=0){ toast('金額を入力してください','warn'); return; }
+  const date=document.getElementById('tfDate').value||todayStr();
+  const memo=(document.getElementById('tfMemo').value||'').trim();
+  const ev=activeEvent();
+  db.ledger.push({id:mkId('t'), ts:Date.now(), date, eventId: ev?ev.id:null, kind:'transfer', from, to, amount, memo});
+  save(); closeTransferForm(); renderAll();
+  const fromM=memberById(from), toM=memberById(to);
+  toast(`${fromM.name}→${toM.name} ${yen(amount)} 記録`,'ok');
+}
 function deleteLedger(id){
   const l=db.ledger.find(x=>x.id===id); if(!l) return;
-  const c=categoryById(l.categoryId);
-  if(!confirm(`この記録を削除しますか？\n${l.kind==='income'?'収入':'支出'} ${yen(l.amount)}${c?'・'+c.name:''}`)) return;
+  let msg;
+  if(l.kind==='transfer'){
+    const fm=memberById(l.from), tm=memberById(l.to);
+    msg=`この精算記録を削除しますか？\n${fm?fm.name:'?'}→${tm?tm.name:'?'} ${yen(l.amount)}`;
+  } else {
+    const c=categoryById(l.categoryId);
+    msg=`この記録を削除しますか？\n${l.kind==='income'?'収入':'支出'} ${yen(l.amount)}${c?'・'+c.name:''}`;
+  }
+  if(!confirm(msg)) return;
   db.ledger=db.ledger.filter(x=>x.id!==id); save(); renderAll(); toast('削除しました','warn');
 }
 
@@ -980,36 +1054,41 @@ function renderStats(){
 
 // ---- メンバー精算 ----
 // バンド収入・バンド共通支出は「バンド金庫」に入る前提で、メンバー間精算からは除外。
-// メンバー間精算対象 = 「splitMode='even' かつ 立替者が個人メンバー」の支出のみ
+// メンバー間精算対象 = 「splitMode='even' かつ 立替者が個人メンバー」の支出 + transfer（精算済み記録）
 // paidSplit: そのメンバーが割り勘立替で払った額
 // share: そのメンバーが割り勘参加で負担すべき額
+// paidBack: そのメンバーが「借りを返した」額（transfer.from の合計）
+// gotBack: そのメンバーが「貸しを返してもらった」額（transfer.to の合計）
 // bandExpense: バンド金庫への貸し（バンド共通支出を立て替えた額）
 // received: そのメンバーが受け取った収入（バンド金庫に戻すべき額）
-// splitNet = paidSplit - share  （正=メンバーから受け取る、負=メンバーに払う）
+// splitNet = paidSplit - share + paidBack - gotBack  （正=まだメンバーから受け取る残高、負=まだメンバーに払う残高）
 // bandNet = bandExpense - received （正=バンド金庫から返してもらう、負=バンド金庫に納める）
 function memberBalance(memberId, eventId){
-  let paidSplit=0, share=0, bandExpense=0, received=0;
+  let paidSplit=0, share=0, bandExpense=0, received=0, paidBack=0, gotBack=0;
   for(const l of ledgerFor(eventId)){
+    if(l.kind==='transfer'){
+      // 精算済み記録: from→to
+      if(l.from===memberId) paidBack += l.amount||0;
+      if(l.to===memberId)   gotBack += l.amount||0;
+      continue;
+    }
     const payer = l.memberId||'m_common';
     if(l.kind==='expense'){
       if(l.splitMode==='even'){
-        // 立替者が個人メンバーの場合のみメンバー間精算に含める
         if(payer!=='m_common' && payer===memberId) paidSplit+=l.amount||0;
         if(payer!=='m_common' && Array.isArray(l.splitAmong) && l.splitAmong.includes(memberId) && l.splitAmong.length>0){
           share += (l.amount||0) / l.splitAmong.length;
         }
       } else {
-        // バンド共通支出: 立替者が個人ならバンド金庫との貸し借り
         if(payer!=='m_common' && payer===memberId) bandExpense+=l.amount||0;
       }
-    } else {
-      // 収入: 受け取った個人 → バンド金庫に戻す
+    } else if(l.kind==='income') {
       if(payer!=='m_common' && payer===memberId) received+=l.amount||0;
     }
   }
-  const splitNet = paidSplit - share;
+  const splitNet = paidSplit - share + paidBack - gotBack;
   const bandNet = bandExpense - received;
-  return {paidSplit, share, bandExpense, received, splitNet, bandNet, net: splitNet + bandNet};
+  return {paidSplit, share, paidBack, gotBack, bandExpense, received, splitNet, bandNet, net: splitNet + bandNet};
 }
 // 最小回数の精算指示（メンバー間割り勘のみ、合計必ずゼロ）
 function computeSettlements(eventId){
@@ -1038,7 +1117,7 @@ function renderSettlement(id){
 
   // メンバー間精算（割り勘由来）
   const transfers=computeSettlements(id);
-  const anySplitActivity=rows.some(r=>r.paidSplit>0||r.share>0);
+  const anySplitActivity=rows.some(r=>r.paidSplit>0||r.share>0||r.paidBack>0||r.gotBack>0);
   const splitSection = anySplitActivity ? `
     <div class="subhead">メンバー間 精算（割り勘）</div>
     <div class="section" style="margin-bottom:12px">${
@@ -1048,15 +1127,26 @@ function renderSettlement(id){
         const detail=[];
         if(r.paidSplit>0) detail.push('立替 '+yen(r.paidSplit));
         if(r.share>0) detail.push('負担 '+yen(Math.round(r.share)));
+        if(r.paidBack>0) detail.push('渡した '+yen(r.paidBack));
+        if(r.gotBack>0) detail.push('受取済 '+yen(r.gotBack));
         return `<div class="settlerow">
           <div style="flex:1"><div class="nm">${esc(r.name)}</div><div class="breakdown">${detail.length?detail.join(' / '):'参加なし'}</div></div>
           <div class="net ${cls}">${yenSign(net)}</div>
         </div>`;
       }).join('')
     }</div>
+    <button class="btn ghost" style="margin-bottom:10px" onclick="openTransferForm()">＋ 手動で精算を記録</button>
     ${transfers.length
-      ? `${transfers.map(t=>`<div class="transfer"><span class="from">${esc(t.from)}</span><span class="arrow">→</span><span class="to">${esc(t.to)}</span><span class="amt">${yen(t.amount)}</span></div>`).join('')}
-         <div class="hint" style="margin:6px 0 12px">この通りに払えばメンバー間の残高がゼロに戻る（最小回数で計算）</div>`
+      ? `${transfers.map(t=>{
+          const fromM=db.members.find(m=>m.name===t.from);
+          const toM=db.members.find(m=>m.name===t.to);
+          return `<div class="transfer">
+            <span class="from">${esc(t.from)}</span><span class="arrow">→</span><span class="to">${esc(t.to)}</span>
+            <span class="amt">${yen(t.amount)}</span>
+            <button class="tdone" onclick="markSettlementDone('${fromM?fromM.id:''}','${toM?toM.id:''}',${t.amount})" title="渡した">✓済み</button>
+          </div>`;
+        }).join('')}
+         <div class="hint" style="margin:6px 0 12px">✓済みを押すと「渡した」として記録され、残高から相殺されます</div>`
       : `<div class="hint" style="margin:0 0 12px">メンバー間で払うべき／受け取るべき残高なし</div>`}
   ` : '';
 
