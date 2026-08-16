@@ -1,12 +1,16 @@
-// MIDNIGHT CHAT PARTY 販売アプリ — オフライン用 Service Worker
-const CACHE='mcp-book-v11';
+// MIDNIGHT CHAT PARTY 物販フライヤー — オフライン用 Service Worker（scope: /flyer/）
+const CACHE='mcp-flyer-v1';
 const ASSETS=[
   './',
   './index.html',
   './manifest.webmanifest',
-  './icon-180.png',
-  './icon-192.png',
-  './icon-512.png'
+  './sticker-white.jpg',
+  './sticker-gray.jpg',
+  './qr-instagram.jpg',
+  './qr-x.jpg',
+  '../icon-180.png',
+  '../icon-192.png',
+  '../icon-512.png'
 ];
 
 self.addEventListener('install',e=>{
@@ -15,8 +19,8 @@ self.addEventListener('install',e=>{
 
 self.addEventListener('activate',e=>{
   e.waitUntil(
-    // 同一オリジンでフライヤー(mcp-flyer-*)とキャッシュ空間を共有しているため、自分のプレフィックスだけ掃除する
-    caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('mcp-book-')&&k!==CACHE).map(k=>caches.delete(k))))
+    // 同一オリジンで帳簿アプリ(mcp-book-*)とキャッシュ空間を共有しているため、自分のプレフィックスだけ掃除する
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('mcp-flyer-')&&k!==CACHE).map(k=>caches.delete(k))))
       .then(()=>self.clients.claim())
   );
 });
