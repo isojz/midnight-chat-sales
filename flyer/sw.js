@@ -1,11 +1,11 @@
 // MIDNIGHT CHAT PARTY 物販フライヤー — オフライン用 Service Worker（scope: /flyer/）
-const CACHE='mcp-flyer-v1';
+const CACHE='mcp-flyer-v2';
 const ASSETS=[
   './',
   './index.html',
   './manifest.webmanifest',
-  './sticker-white.jpg',
-  './sticker-gray.jpg',
+  './sticker-white.png',
+  './sticker-gray.png',
   './qr-instagram.jpg',
   './qr-x.jpg',
   '../icon-180.png',
