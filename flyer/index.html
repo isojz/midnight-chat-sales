@@ -129,21 +129,16 @@
     display:flex;
     gap:1.5vw;
   }
+  .qrs{ cursor:pointer; }
   .qr{
     display:flex;
     flex-direction:column;
     align-items:center;
     gap:.8vh;
-    position:relative;
-    margin-right:4.8vh; /* 右横の虫眼鏡ボタンぶん */
-    cursor:pointer;
   }
   .qrzoom{
-    position:absolute;
-    right:-4.8vh;
-    top:6.7vh;
-    transform:translateY(-50%);
-    width:4vh; height:4vh;
+    align-self:center;
+    width:4.4vh; height:4.4vh;
     border-radius:50%;
     background:var(--paper);
     color:var(--ink);
@@ -152,8 +147,10 @@
     align-items:center;
     justify-content:center;
     cursor:pointer;
+    flex:none;
+    margin-left:.5vw;
   }
-  .qrzoom svg{ width:2.3vh; height:2.3vh; display:block; }
+  .qrzoom svg{ width:2.5vh; height:2.5vh; display:block; }
   .qr img{
     display:block;
     height:12vh; width:auto; /* アスペクト維持（歪むと読めなくなる） */
@@ -178,9 +175,20 @@
     cursor:pointer;
   }
   #qrOverlay.show{ display:flex; }
-  #qrOverlay .ov-icon svg{ width:5vh; height:5vh; display:block; color:var(--ink); }
-  #ovImg{
-    max-height:62vh; max-width:82vw;
+  .ov-grid{
+    display:flex;
+    gap:7vw;
+    align-items:flex-start;
+  }
+  .ov-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2.6vh;
+  }
+  .ov-item svg{ width:4.6vh; height:4.6vh; display:block; color:var(--ink); }
+  .ov-item img{
+    max-width:37vw; max-height:56vh;
     width:auto; height:auto;
   }
   #qrOverlay .ov-hint{
@@ -246,8 +254,8 @@
       <span class="yen">¥200</span>
     </div>
     <!-- QR: flyer/ に qr-instagram.jpg / qr-x.jpg を置くと表示される（無ければ自動非表示） -->
-    <div class="qrs">
-      <figure class="qr" onclick="showQR('qr-instagram.jpg','instagram')">
+    <div class="qrs" onclick="showQRs()">
+      <figure class="qr">
         <img src="qr-instagram.jpg" alt="Instagram QR" onerror="this.parentElement.style.display='none'">
         <figcaption>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Instagram">
@@ -256,50 +264,50 @@
             <circle cx="17.4" cy="6.6" r="1.3" fill="currentColor" stroke="none"/>
           </svg>
         </figcaption>
-        <button class="qrzoom" type="button" aria-label="QRを拡大">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <circle cx="10.5" cy="10.5" r="6.5"/>
-            <line x1="15.3" y1="15.3" x2="21" y2="21"/>
-            <line x1="7.7" y1="10.5" x2="13.3" y2="10.5"/>
-            <line x1="10.5" y1="7.7" x2="10.5" y2="13.3"/>
-          </svg>
-        </button>
       </figure>
-      <figure class="qr" onclick="showQR('qr-x.jpg','x')">
+      <figure class="qr">
         <img src="qr-x.jpg" alt="X QR" onerror="this.parentElement.style.display='none'">
         <figcaption>
           <svg viewBox="0 0 24 24" fill="currentColor" aria-label="X">
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
           </svg>
         </figcaption>
-        <button class="qrzoom" type="button" aria-label="QRを拡大">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <circle cx="10.5" cy="10.5" r="6.5"/>
-            <line x1="15.3" y1="15.3" x2="21" y2="21"/>
-            <line x1="7.7" y1="10.5" x2="13.3" y2="10.5"/>
-            <line x1="10.5" y1="7.7" x2="10.5" y2="13.3"/>
-          </svg>
-        </button>
       </figure>
+      <button class="qrzoom" type="button" aria-label="QRを拡大表示">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <circle cx="10.5" cy="10.5" r="6.5"/>
+          <line x1="15.3" y1="15.3" x2="21" y2="21"/>
+          <line x1="7.7" y1="10.5" x2="13.3" y2="10.5"/>
+          <line x1="10.5" y1="7.7" x2="10.5" y2="13.3"/>
+        </svg>
+      </button>
     </div>
   </div>
 </footer>
 
-<!-- QR拡大表示（どこをタップしても閉じる） -->
+<!-- QR拡大表示（2つ並び・どこをタップしても閉じる） -->
 <div id="qrOverlay" onclick="hideQR()">
-  <div class="ov-icon" id="ovIcon"></div>
-  <img id="ovImg" src="" alt="QRコード（拡大）">
+  <div class="ov-grid">
+    <div class="ov-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Instagram">
+        <rect x="2.5" y="2.5" width="19" height="19" rx="5"/>
+        <circle cx="12" cy="12" r="4.4"/>
+        <circle cx="17.4" cy="6.6" r="1.3" fill="currentColor" stroke="none"/>
+      </svg>
+      <img src="qr-instagram.jpg" alt="Instagram QR（拡大）">
+    </div>
+    <div class="ov-item">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-label="X">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+      <img src="qr-x.jpg" alt="X QR（拡大）">
+    </div>
+  </div>
   <div class="ov-hint">タップで閉じる</div>
 </div>
 
 <script>
-const OV_ICONS={
-  instagram:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><circle cx="12" cy="12" r="4.4"/><circle cx="17.4" cy="6.6" r="1.3" fill="currentColor" stroke="none"/></svg>`,
-  x:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`
-};
-function showQR(src, which){
-  document.getElementById('ovImg').src=src;
-  document.getElementById('ovIcon').innerHTML=OV_ICONS[which]||'';
+function showQRs(){
   document.getElementById('qrOverlay').classList.add('show');
 }
 function hideQR(){
