@@ -1,5 +1,5 @@
 // MIDNIGHT CHAT PARTY 物販フライヤー — オフライン用 Service Worker（scope: /flyer/）
-const CACHE='mcp-flyer-v3';
+const CACHE='mcp-flyer-v4';
 const ASSETS=[
   './',
   './index.html',
