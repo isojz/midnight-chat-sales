@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Midnight Chat Party — STICKERS</title>
+<style>
+  :root{
+    --ink:#111;
+    --paper:#fff;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    height:100dvh;
+    overflow:hidden;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Helvetica Neue",Helvetica,Arial,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+    display:grid;
+    grid-template-rows:auto 1fr auto;
+    -webkit-user-select:none; user-select:none;
+  }
+
+  /* ---- header ---- */
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:2.6vh 4vw 2vh;
+    border-bottom:3px solid var(--ink);
+  }
+  header h1{
+    font-size:5.6vh;
+    font-weight:900;
+    letter-spacing:.02em;
+    line-height:1;
+  }
+  header .band{
+    font-size:2vh;
+    font-weight:800;
+    letter-spacing:.28em;
+  }
+
+  /* ---- stickers ---- */
+  main{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:5vw;
+    padding:2vh 4vw;
+    min-height:0;
+  }
+  figure{
+    text-align:center;
+    min-width:0;
+    margin:0;
+  }
+  main figure img{
+    display:block;
+    max-width:38vw;
+    max-height:42vh;
+    width:auto; height:auto;
+    border:3px solid var(--ink);
+  }
+  main figcaption{
+    margin-top:1.6vh;
+    font-size:1.9vh;
+    font-weight:800;
+    letter-spacing:.34em;
+    text-indent:.34em; /* letter-spacing の右余白ぶん補正 */
+  }
+
+  /* ---- price ---- */
+  footer{
+    display:grid;
+    grid-template-columns:1fr 1.5fr;
+    border-top:3px solid var(--ink);
+  }
+  .price{
+    display:flex;
+    justify-content:center;
+    align-items:baseline;
+    gap:1.2vw;
+    padding:3vh 2vw;
+  }
+  .price .label{
+    font-size:2.4vh;
+    font-weight:700;
+  }
+  .price .yen{
+    font-size:6.4vh;
+    font-weight:900;
+    line-height:1;
+    letter-spacing:.01em;
+  }
+  .price.follow{
+    background:var(--ink);
+    color:var(--paper);
+    align-items:center;
+    gap:2.5vw;
+  }
+  .deal{
+    display:flex;
+    align-items:center;
+    gap:1vw;
+  }
+  .deal .label,
+  .deal .count,
+  .deal .yen{
+    white-space:nowrap;
+  }
+  .deal .icons{
+    display:flex;
+    align-items:center;
+    gap:1vw;
+  }
+  .deal .icons svg{
+    width:4.2vh; height:4.2vh;
+    display:block;
+  }
+  .deal .count{
+    font-size:3vh;
+    font-weight:800;
+  }
+  .qrs{
+    display:flex;
+    gap:1.5vw;
+  }
+  .qr{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:.8vh;
+  }
+  .qr img{
+    display:block;
+    width:12vh; height:12vh;
+    background:var(--paper);
+    padding:.7vh; /* QRの静穏域（白フチ） */
+  }
+  .qr figcaption svg{
+    width:2.4vh; height:2.4vh;
+    display:block;
+  }
+
+  /* ---- portrait ---- */
+  @media (orientation:portrait){
+    header h1{ font-size:4.4vh; }
+    header .band{ font-size:1.6vh; letter-spacing:.2em; }
+    main{
+      gap:6vw;
+    }
+    main figure img{
+      max-width:40vw;
+      max-height:26vh;
+    }
+    main figcaption{ margin-top:1vh; }
+    footer{ grid-template-columns:1fr; }
+    .price{ padding:2vh 2vw; }
+    .price .yen{ font-size:5.4vh; }
+    .price.follow{
+      flex-direction:column;
+      gap:1.5vh;
+    }
+    .qr img{ width:12vh; height:12vh; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>STICKERS</h1>
+  <div class="band">MIDNIGHT CHAT PARTY</div>
+</header>
+
+<main>
+  <figure>
+    <img src="sticker-white.jpg" alt="ステッカー（白）">
+    <figcaption>WHITE</figcaption>
+  </figure>
+  <figure>
+    <img src="sticker-gray.jpg" alt="ステッカー（グレー）">
+    <figcaption>GRAY</figcaption>
+  </figure>
+</main>
+
+<footer>
+  <div class="price">
+    <span class="label">1枚</span>
+    <span class="yen">¥200</span>
+  </div>
+  <div class="price follow">
+    <div class="deal">
+      <span class="icons">
+        <!-- Instagram -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Instagram">
+          <rect x="2.5" y="2.5" width="19" height="19" rx="5"/>
+          <circle cx="12" cy="12" r="4.4"/>
+          <circle cx="17.4" cy="6.6" r="1.3" fill="currentColor" stroke="none"/>
+        </svg>
+        <!-- X -->
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-label="X">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+      </span>
+      <span class="label">フォローで</span>
+      <span class="count">2枚</span>
+      <span class="yen">¥300</span>
+    </div>
+    <!-- QR: flyer/ に qr-instagram.png / qr-x.png を置くと表示される（無ければ自動非表示） -->
+    <div class="qrs">
+      <figure class="qr">
+        <img src="qr-instagram.png" alt="Instagram QR" onerror="this.parentElement.style.display='none'">
+        <figcaption>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Instagram">
+            <rect x="2.5" y="2.5" width="19" height="19" rx="5"/>
+            <circle cx="12" cy="12" r="4.4"/>
+            <circle cx="17.4" cy="6.6" r="1.3" fill="currentColor" stroke="none"/>
+          </svg>
+        </figcaption>
+      </figure>
+      <figure class="qr">
+        <img src="qr-x.png" alt="X QR" onerror="this.parentElement.style.display='none'">
+        <figcaption>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-label="X">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
