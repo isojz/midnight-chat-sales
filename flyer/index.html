@@ -80,9 +80,14 @@
   .price{
     display:flex;
     justify-content:center;
+    align-items:center;
+    padding:3vh 2vw;
+  }
+  .price .group{
+    display:flex;
     align-items:baseline;
     gap:1.2vw;
-    padding:3vh 2vw;
+    white-space:nowrap;
   }
   .price .label{
     font-size:2.4vh;
@@ -102,9 +107,10 @@
   }
   .deal{
     display:flex;
-    align-items:center;
+    align-items:baseline;
     gap:1vw;
   }
+  .deal .icons{ align-self:center; }
   .deal .label,
   .deal .count,
   .deal .yen{
@@ -135,7 +141,7 @@
   }
   .qr img{
     display:block;
-    width:12vh; height:12vh;
+    height:12vh; width:auto; /* アスペクト維持（歪むと読めなくなる） */
     background:var(--paper);
     padding:.7vh; /* QRの静穏域（白フチ） */
   }
@@ -163,7 +169,7 @@
       flex-direction:column;
       gap:1.5vh;
     }
-    .qr img{ width:12vh; height:12vh; }
+    .qr img{ height:12vh; width:auto; }
   }
 </style>
 </head>
@@ -187,8 +193,10 @@
 
 <footer>
   <div class="price">
-    <span class="label">1枚</span>
-    <span class="yen">¥200</span>
+    <span class="group">
+      <span class="label">1枚</span>
+      <span class="yen">¥200</span>
+    </span>
   </div>
   <div class="price follow">
     <div class="deal">
@@ -208,10 +216,10 @@
       <span class="count">2枚</span>
       <span class="yen">¥300</span>
     </div>
-    <!-- QR: flyer/ に qr-instagram.png / qr-x.png を置くと表示される（無ければ自動非表示） -->
+    <!-- QR: flyer/ に qr-instagram.jpg / qr-x.jpg を置くと表示される（無ければ自動非表示） -->
     <div class="qrs">
       <figure class="qr">
-        <img src="qr-instagram.png" alt="Instagram QR" onerror="this.parentElement.style.display='none'">
+        <img src="qr-instagram.jpg" alt="Instagram QR" onerror="this.parentElement.style.display='none'">
         <figcaption>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Instagram">
             <rect x="2.5" y="2.5" width="19" height="19" rx="5"/>
@@ -221,7 +229,7 @@
         </figcaption>
       </figure>
       <figure class="qr">
-        <img src="qr-x.png" alt="X QR" onerror="this.parentElement.style.display='none'">
+        <img src="qr-x.jpg" alt="X QR" onerror="this.parentElement.style.display='none'">
         <figcaption>
           <svg viewBox="0 0 24 24" fill="currentColor" aria-label="X">
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
