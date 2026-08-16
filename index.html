@@ -271,6 +271,27 @@
   .pickrow .chk{margin-left:auto;color:var(--cyan);font-size:18px}
   .newform{border:1px dashed var(--line);border-radius:12px;padding:13px;margin-top:6px;margin-bottom:12px}
 
+  /* ---- 領収書 ---- */
+  .rcpt{background:#fbfaf7;color:#1c1c1c;border-radius:6px;padding:22px 20px 16px;font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;box-shadow:0 4px 16px rgba(0,0,0,.5);-webkit-user-select:text;user-select:text}
+  .rcpt .rc-top{display:flex;justify-content:space-between;font-size:10px;color:#777;margin-bottom:6px;font-family:-apple-system,"Segoe UI",Roboto,sans-serif}
+  .rcpt h2{margin:0 0 16px;text-align:center;font-size:22px;letter-spacing:.45em;text-indent:.45em;font-weight:700}
+  .rcpt .rc-to{display:flex;align-items:baseline;gap:6px;border-bottom:1px solid #999;padding-bottom:4px;margin-bottom:16px}
+  .rcpt .rc-to input{flex:1;min-width:0;border:none;background:transparent;font:inherit;font-size:17px;color:#1c1c1c;outline:none;-webkit-user-select:text;user-select:text}
+  .rcpt .rc-to input::placeholder{color:#9a9a9a}
+  .rcpt .rc-to .sama{font-size:14px;flex:none}
+  .rcpt .rc-amt{border:2px solid #1c1c1c;background:#f3f1ea;text-align:center;padding:10px;font-size:27px;font-weight:700;letter-spacing:.04em;margin-bottom:14px}
+  .rcpt .rc-amt small{font-size:12px;font-weight:400;margin-right:10px;vertical-align:2px}
+  .rcpt .rc-tadashi{font-size:13px;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:6px}
+  .rcpt .rc-fixed{font-size:12px;color:#444;margin-bottom:14px}
+  .rcpt .rc-items{font-size:11px;color:#555;border-top:1px dashed #bbb;padding-top:8px;margin-bottom:16px}
+  .rcpt .rc-items .ln{display:flex;justify-content:space-between;padding:2px 0}
+  .rcpt .rc-foot{display:flex;justify-content:space-between;align-items:flex-end}
+  .rcpt .rc-date{font-size:11px;color:#444}
+  .rcpt .rc-issuer{text-align:right;font-size:14px;font-weight:700;position:relative;padding-right:4px}
+  .rcpt .rc-issuer .sub{font-size:10px;color:#666;font-weight:400;margin-top:2px;font-family:-apple-system,"Segoe UI",Roboto,sans-serif}
+  .rcpt .stamp{position:absolute;right:-6px;top:-16px;width:60px;height:60px;border:2.5px solid rgba(198,40,40,.72);border-radius:50%;color:rgba(198,40,40,.78);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;text-align:center;line-height:1.3;transform:rotate(-11deg);letter-spacing:.04em;pointer-events:none}
+  .rcpt .rc-note{font-size:9px;color:#999;margin-top:14px;text-align:center}
+
   #toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(20px);background:#222b35;border:1px solid var(--line);color:var(--text);padding:11px 18px;border-radius:30px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:70;box-shadow:var(--shadow)}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   #toast.ok{border-color:var(--green-d)}
@@ -302,6 +323,7 @@
       <button class="btn clear" onclick="clearCart()">クリア</button>
       <button class="btn confirm" id="confirmBtn" onclick="confirmSale()" disabled>会計を記録</button>
     </div>
+    <div id="lastSaleWrap"></div>
   </section>
 
   <!-- ===== 帳簿（収支入力・履歴） ===== -->
@@ -498,6 +520,16 @@
   </div>
 </div>
 
+<!-- 領収書モーダル -->
+<div class="modal" id="receiptModal">
+  <div class="sheet">
+    <div class="sheet-h">領収書<button class="cls" onclick="closeReceipt()">✕</button></div>
+    <div id="rcptWrap"></div>
+    <div class="hint" style="margin-top:10px">宛名は領収書をタップして直接入力できます（空欄なら「上様」）。お渡しはスクショか画面を見せて。</div>
+    <button class="btn ghost" style="margin-top:10px" onclick="closeReceipt()">閉じる</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -649,6 +681,8 @@ function setSyncStatus(s){
   el.className='sync sync-'+s;
 }
 function initFirebase(){
+  // 検証用: ?nocloud を付けて開くとクラウド同期を完全停止（本番Firestoreに一切触らない）
+  if(new URLSearchParams(location.search).has('nocloud')){ setSyncStatus('disabled'); return; }
   if(typeof firebase==='undefined'){ setSyncStatus('disabled'); return; }
   try{
     fireApp=firebase.initializeApp(firebaseConfig);
@@ -820,9 +854,55 @@ function confirmSale(){
     items.push({productId:pid,name:p.name,type:(type==='discount'&&hasDiscount(p))?'discount':'normal',qty:cart[k],unit:unitPrice(p,type)}); }
   if(items.length===0) return;
   const total=cartTotal();
-  db.sales.push({id:mkId('s'),eventId:ev.id,ts:Date.now(),items,total});
+  const sale={id:mkId('s'),eventId:ev.id,ts:Date.now(),items,total};
+  db.sales.push(sale);
+  lastSaleId=sale.id;
   save(); cart={}; renderAll(); toast('記録しました '+yen(total),'ok');
 }
+
+// ---- 領収書 ----
+let lastSaleId=null;   // このセッションで直前に記録した会計（永続化しない）
+function renderLastSaleBtn(){
+  const el=document.getElementById('lastSaleWrap'); if(!el) return;
+  const s=lastSaleId? db.sales.find(x=>x.id===lastSaleId):null;
+  el.innerHTML = s
+    ? `<button class="btn ghost" style="margin-top:10px" onclick="openReceipt('${s.id}')">🧾 いまの会計の領収書（${yen(s.total)}）</button>`
+    : '';
+}
+function receiptNo(s){
+  const d=new Date(s.ts); const z=n=>String(n).padStart(2,'0');
+  return `MCP-${String(d.getFullYear()).slice(2)}${z(d.getMonth()+1)}${z(d.getDate())}-${String(s.id).slice(-4).toUpperCase()}`;
+}
+function openReceipt(saleId){
+  const s=db.sales.find(x=>x.id===saleId); if(!s){ toast('会計が見つかりません','warn'); return; }
+  const d=new Date(s.ts);
+  const dateTxt=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+  const allSticker=s.items.every(it=>(it.name||'').includes('ステッカー'));
+  const tadashi=allSticker?'ステッカー代として':'グッズ代として';
+  const itemsHtml=s.items.map(it=>
+    `<div class="ln"><span>${esc(it.name)}${it.type==='discount'?'（割引）':''} × ${it.qty}</span><span>${yen(it.unit*it.qty)}</span></div>`
+  ).join('');
+  document.getElementById('rcptWrap').innerHTML=`
+  <div class="rcpt">
+    <div class="rc-top"><span>No. ${receiptNo(s)}</span><span>${dateTxt}</span></div>
+    <h2>領 収 書</h2>
+    <div class="rc-to"><input type="text" id="rcptTo" placeholder="上" autocomplete="off"><span class="sama">様</span></div>
+    <div class="rc-amt"><small>金額</small>${yen(s.total)} −</div>
+    <div class="rc-tadashi">但し ${tadashi}</div>
+    <div class="rc-fixed">上記、正に領収いたしました。</div>
+    <div class="rc-items">${itemsHtml}</div>
+    <div class="rc-foot">
+      <div class="rc-date">発行日 ${dateTxt}</div>
+      <div class="rc-issuer">Midnight Chat Party
+        <div class="sub">@midnightchatparty</div>
+        <div class="stamp">Midnight<br>Chat<br>Party<br>之印</div>
+      </div>
+    </div>
+    ${s.total<50000?'<div class="rc-note">※ 5万円未満のため収入印紙は不要です</div>':''}
+  </div>`;
+  document.getElementById('receiptModal').classList.add('show');
+}
+function closeReceipt(){ document.getElementById('receiptModal').classList.remove('show'); }
 
 // ---- 帳簿タブ ----
 function setBookScope(s){ bookScope=s; document.getElementById('bkEvent').classList.toggle('active',s==='event'); document.getElementById('bkAll').classList.toggle('active',s==='all'); renderBook(); }
@@ -1284,7 +1364,9 @@ function renderHist(){
     const e=eventById(s.eventId);
     const lvTag=(!useEvent && e)?`<div class="lv">${esc(e.name)}</div>`:'';
     return `<div class="hitem"><div>${lvTag}<div class="t">${fmtTime(s.ts)}</div><div class="d">${desc}</div></div>
-      <div class="a">${yen(s.total)}</div><button class="del" onclick="deleteSale('${s.id}')">取消</button></div>`;
+      <div class="a">${yen(s.total)}</div>
+      <button class="del" style="color:var(--cyan)" onclick="openReceipt('${s.id}')" title="領収書">🧾</button>
+      <button class="del" onclick="deleteSale('${s.id}')">取消</button></div>`;
   }).join('');
 }
 function deleteSale(id){
@@ -1671,13 +1753,14 @@ function importJSON(file){
 let toastTimer=null;
 function toast(msg,kind){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+(kind||'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.className='';},1800);}
 function switchTab(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));window.scrollTo(0,0);}
-const APP_VER='v7.0';
+const APP_VER='v7.1';
 function fillMeta(){ document.getElementById('meta').textContent='商品 '+db.products.length+' ・ ライブ '+db.events.length+' ・ 会計 '+db.sales.length+' ・ 帳簿 '+db.ledger.length+' ・ メンバー '+(db.members.filter(m=>!m.system).length)+'人 ・ '+APP_VER+' ・ ローカル保存（この端末内）'; }
 
 function renderAll(){
   renderLiveBar(); renderProducts(); renderCart();
   renderBook(); renderStats(); renderHist();
   renderProdAdmin(); renderLiveAdmin(); renderCatAdmin(); renderMemAdmin();
+  renderLastSaleBtn();
   fillMeta();
 }
 renderAll();
